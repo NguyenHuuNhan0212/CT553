@@ -10,7 +10,8 @@ const placeSchema = new mongoose.Schema(
     },
     name: String,
     address: String,
-    description: String
+    description: String,
+    avgPrice: Number
   },
   { timestamps: true }
 );

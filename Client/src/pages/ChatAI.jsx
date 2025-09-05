@@ -10,7 +10,8 @@ export default function ChatAI() {
     setMsgs((prev) => [...prev, { role: 'user', content: input }]);
     try {
       const res = await axios.post('http://localhost:3000/api/chat/ask', {
-        question: input
+        question: input,
+        userId: '123'
       });
       setMsgs((prev) => [
         ...prev,

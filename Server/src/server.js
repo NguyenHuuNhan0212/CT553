@@ -12,7 +12,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Nếu connectDB trả về Promise, dùng then/catch vì CommonJS không hỗ trợ await ở top-level
 connectDB(process.env.MONGO_URI);
 
 app.get('/health', (_, res) => res.json({ ok: true }));
