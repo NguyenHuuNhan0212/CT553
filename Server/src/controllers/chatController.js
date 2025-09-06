@@ -4,83 +4,13 @@ const { chatWithLLM } = require('../services/Chatbot/aiClient');
 const { getWeather } = require('../services/Chatbot/weather');
 const { extractCity } = require('../services/Chatbot/extractCity');
 const { getSession, setSession, clearSession } = require('../utils/session');
-const { set } = require('mongoose');
-// Phân loại intent
-async function classifyQuestion(question) {
-  const systemPrompt = {
-    role: 'system',
-    content: `
-Bạn là một trợ lý AI thân thiện và hữu ích.
-Phân loại câu hỏi người dùng thành 4 loại:
-1. greeting → câu chào
-2. travel → câu hỏi liên quan du lịch (địa điểm, thời tiết, khách sạn, ăn uống, phương tiện, lịch trình, chi phí...)
-3. plan_trip →  yêu cầu tạo lịch trình du lịch (ví dụ: "lập kế hoạch đi Cần Thơ 2 ngày 1 đêm")
-4. other → các câu hỏi khác ngoài du lịch
-Trả về duy nhất 1 từ: greeting, travel, plan_trip, other
-`
-  };
-  const userMessage = { role: 'user', content: question };
-  const response = await chatWithLLM([systemPrompt, userMessage]);
-  const category = response.trim().toLowerCase();
-  if (['greeting', 'travel', 'plan_trip', 'other'].includes(category))
-    return category;
-  return 'other';
-}
-
-// Kiểm tra câu hỏi về thời tiết
-function isWeatherQuestion(question) {
-  const q = question.toLowerCase();
-  return q.includes('thời tiết') || q.includes('weather');
-}
-
-// Tạo lịch trình từ Place
-async function createTripPlan(city, numDays = 1) {
-  // Lấy tất cả các place ở city
-  const places = await Place.find({ address: { $regex: city, $options: 'i' } });
-
-  if (!places.length) return null;
-
-  // Chia lịch trình theo ngày
-  const plan = [];
-  const activitiesPerDay = Math.ceil(places.length / numDays);
-
-  for (let day = 1; day <= numDays; day++) {
-    const start = (day - 1) * activitiesPerDay;
-    const end = start + activitiesPerDay;
-    const dayPlaces = places.slice(start, end);
-
-    const dayPlan = {
-      day,
-      activities: dayPlaces.map((p) => ({
-        name: p.name,
-        type: p.type,
-        address: p.address,
-        description: p.description,
-        cost: p.avgPrice || 0
-      }))
-    };
-
-    plan.push(dayPlan);
-  }
-
-  return plan;
-}
-function formatTripPlan(tripPlan, numDays, city) {
-  let totalCost = 0;
-  let planText = `Lịch trình ${numDays} ngày ở ${city}:\n\n`;
-  tripPlan.forEach((day) => {
-    planText += `Ngày ${day.day}:\n`;
-    day.activities.forEach((act, idx) => {
-      planText += `${idx + 1}. ${act.name} (${act.type}) - ${
-        act.address
-      } - chi phí: ${act.cost} VND\n`;
-      totalCost += act.cost;
-    });
-    planText += '\n';
-  });
-  planText += `Tổng chi phí ước tính: ${totalCost} VND`;
-  return planText;
-}
+const {
+  classifyQuestion,
+  isWeatherQuestion,
+  createTripPlan,
+  formatTripPlanWithGPT,
+  isPlaceListQuestion
+} = require('../utils/chatbot');
 
 const ask = async (req, res) => {
   try {
@@ -92,13 +22,13 @@ const ask = async (req, res) => {
     let answer = '';
 
     // Nếu đang chờ số ngày từ user
-    if (session.awaitingDays && /^\d+\s*ngày?$/.test(question)) {
+    if (session.awaitingDays && /^\d+(\s*ngày)?$/.test(question)) {
       const numDays = parseInt(question.match(/\d+/)[0]);
       const tripPlan = await createTripPlan(session.city, numDays);
       if (!tripPlan) {
         answer = `Xin lỗi, hiện tại tôi không có dữ liệu địa điểm ở ${session.city}.`;
       } else {
-        answer = formatTripPlan(tripPlan, numDays, session.city);
+        answer = await formatTripPlanWithGPT(tripPlan, numDays, session.city);
       }
       clearSession(userId);
     } else {
@@ -118,6 +48,59 @@ const ask = async (req, res) => {
             answer = await getWeather(cityToUse);
           } catch {
             answer = 'Xin lỗi, tôi không lấy được dữ liệu thời tiết hiện tại.';
+          }
+        } // Nếu hỏi danh sách place (khách sạn, quán cafe, …)
+        else if (isPlaceListQuestion(question)) {
+          const typeMap = {
+            'khách sạn': 'hotel',
+            hotel: 'hotel',
+            'nhà hàng': 'restaurant',
+            'quán ăn': 'restaurant',
+            cafe: 'cafe',
+            'quán cà phê': 'cafe',
+            'điểm vui chơi': 'touristSpot',
+            'điểm tham quan': 'touristSpot',
+            'tourist spot': 'touristSpot'
+          };
+
+          let foundType = null;
+          for (const key of Object.keys(typeMap)) {
+            if (question.toLowerCase().includes(key)) {
+              foundType = typeMap[key];
+              break;
+            }
+          }
+
+          const places = await Place.find({
+            address: { $regex: cityToUse, $options: 'i' },
+            type: foundType
+          });
+
+          if (!places.length) {
+            answer = `Xin lỗi, tôi chưa có dữ liệu về ${
+              foundType || 'địa điểm'
+            } ở ${cityToUse}.`;
+          } else {
+            answer =
+              `Một số ${foundType} nổi bật tại ${cityToUse}:\n` +
+              places
+                .map(
+                  (p, i) =>
+                    `${i + 1}. ${p.name} - ${p.address} - ${
+                      p.description
+                    } - Giá trung bình: ${p.avgPrice || 'N/A'} VND${
+                      foundType === 'hotel'
+                        ? '/đêm'
+                        : foundType === 'restaurant'
+                        ? '/người'
+                        : foundType === 'cafe'
+                        ? '/ly'
+                        : foundType === 'touristSpot'
+                        ? '/vé'
+                        : ''
+                    }`
+                )
+                .join('\n\n');
           }
         } else {
           // Gửi prompt cho AI, kèm city nếu có
@@ -149,7 +132,7 @@ const ask = async (req, res) => {
           if (!tripPlan) {
             answer = `Xin lỗi, hiện tại tôi không có dữ liệu địa điểm ở ${city}.`;
           } else {
-            answer = formatTripPlan(tripPlan, numDays, city);
+            answer = await formatTripPlanWithGPT(tripPlan, numDays, city);
           }
         }
       }
