@@ -207,6 +207,7 @@ function isPlaceListQuestion(question) {
     q.includes('quán cà phê') ||
     q.includes('điểm vui chơi') ||
     q.includes('điểm tham quan') ||
+    q.includes('điểm du lịch') ||
     q.includes('tourist spot')
   );
 }
