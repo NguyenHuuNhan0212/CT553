@@ -5,7 +5,7 @@ const register = async (data) => {
   if (data.email && data.password && data.fullName) {
     const existingUser = await UserModel.findOne({ email: data.email });
     if (existingUser) {
-      throw new Error('Email already in use');
+      throw new Error('Email đã đăng ký tài khoản.');
     }
     const passwordHash = await bcrypt.hash(data.password, 10);
     data.password = passwordHash;
