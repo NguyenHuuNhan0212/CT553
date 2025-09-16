@@ -9,10 +9,10 @@ const tokenSchema = new mongoose.Schema(
     token: { type: String, required: true },
     type: {
       type: String,
-      enum: ['refresh', 'resetPassword'],
+      enum: ['refreshToken', 'resetPassword'],
       required: true
     },
-    expiry: { type: Date, required: true }
+    expiry: { type: Date }
   },
   { timestamps: true }
 );

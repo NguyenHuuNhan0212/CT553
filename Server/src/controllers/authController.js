@@ -2,7 +2,8 @@ const {
   register,
   login,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  refreshTokenService
 } = require('../services/Auth/index.js');
 const registerUser = async (req, res) => {
   try {
@@ -40,4 +41,20 @@ const resetPass = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-module.exports = { registerUser, loginUser, forgotPass, resetPass };
+
+const refreshTokenController = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    const result = await refreshTokenService(refreshToken);
+    res.json(result);
+  } catch (err) {
+    res.status(401).json({ error: err.message });
+  }
+};
+module.exports = {
+  registerUser,
+  loginUser,
+  forgotPass,
+  resetPass,
+  refreshTokenController
+};

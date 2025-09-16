@@ -10,8 +10,8 @@ const getUsers = async (req, res) => {
 };
 const getMyProfile = async (req, res) => {
   try {
-    const userId = req.user.userId;
-    const user = await getMyInfo(userId);
+    const id = req.user.userId;
+    const user = await getMyInfo(id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }

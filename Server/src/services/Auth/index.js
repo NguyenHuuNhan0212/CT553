@@ -5,6 +5,10 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { sendMail } = require('../../utils/nodemailer.js');
+const {
+  generateRefreshToken,
+  generateToken
+} = require('../../utils/generateToken.js');
 const register = async (data) => {
   if (data.email && data.password && data.fullName) {
     const existingUser = await UserModel.findOne({ email: data.email });
@@ -30,12 +34,14 @@ const login = async (data) => {
     if (!isMatch) {
       throw new Error('Invalid email or password');
     }
-    const token = jwt.sign(
-      { userId: user.userId, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'LUAN-VAN-TOT-NGHIEP',
-      { expiresIn: '1h' }
-    );
-    return { token, message: 'Login successful' };
+    const token = generateToken(user);
+    const refreshToken = generateRefreshToken(user);
+    await TokenModel.create({
+      userId: user._id,
+      token: refreshToken,
+      type: 'refreshToken'
+    });
+    return { refreshToken, token, message: 'Login successful' };
   } else {
     throw new Error('Missing required fields');
   }
@@ -92,4 +98,49 @@ const resetPassword = async (token, password) => {
     message: 'Reset Password successfully!'
   };
 };
-module.exports = { register, login, forgotPassword, resetPassword };
+
+const refreshTokenService = async (refreshToken) => {
+  if (!refreshToken) {
+    throw new Error('Thiếu refresh token');
+  }
+
+  const tokenDoc = await TokenModel.findOne({
+    token: refreshToken,
+    type: 'refreshToken'
+  });
+
+  if (!tokenDoc) {
+    throw new Error('Refresh token không tồn tại hoặc đã bị thu hồi');
+  }
+
+  try {
+    // 2. Verify refresh token
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET || 'LUAN-VAN-REFRESH-SECRET'
+    );
+
+    // 3. Tìm user
+    const user = await UserModel.findById(decoded.userId);
+    if (!user) {
+      throw new Error('Người dùng không tồn tại');
+    }
+
+    // 4. Tạo access token mới
+    const newAccessToken = generateToken(user);
+
+    return {
+      token: newAccessToken,
+      message: 'Refresh token thành công'
+    };
+  } catch (err) {
+    throw new Error('Refresh token không hợp lệ hoặc hết hạn');
+  }
+};
+module.exports = {
+  register,
+  login,
+  forgotPassword,
+  resetPassword,
+  refreshTokenService
+};
