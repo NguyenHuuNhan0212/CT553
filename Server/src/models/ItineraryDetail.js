@@ -7,14 +7,14 @@ const itineraryDetailSchema = new mongoose.Schema(
       ref: 'Itinerary',
       required: true
     },
-    placeId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Place',
-      required: true
-    },
-    visitDate: { type: Date, required: true },
-    startTime: String,
-    endTime: String,
+    placeId: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Place',
+        required: true
+      }
+    ],
+    visitDay: { type: String, required: true },
     note: String
   },
   { timestamps: true }

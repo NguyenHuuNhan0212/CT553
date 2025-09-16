@@ -12,7 +12,8 @@ const bookingDetailSchema = new mongoose.Schema(
       ref: 'RoomType',
       required: true
     },
-    quantity: { type: Number, required: true }
+    quantity: { type: Number, required: true },
+    priceAtBooking: { type: Number }
   },
   { timestamps: true }
 );

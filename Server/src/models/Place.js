@@ -9,7 +9,8 @@ const placeSchema = new mongoose.Schema(
       required: true
     },
     name: String,
-    address: String,
+    address: { type: mongoose.Schema.Types.ObjectId, ref: 'Address' },
+
     description: String,
     avgPrice: Number
   },

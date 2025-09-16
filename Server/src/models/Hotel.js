@@ -6,7 +6,9 @@ const hotelSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Place',
       required: true
-    }
+    },
+
+    commissionPerCentage: { type: Number }
   },
   { timestamps: true }
 );
