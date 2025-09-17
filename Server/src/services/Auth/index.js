@@ -36,11 +36,18 @@ const login = async (data) => {
     }
     const token = generateToken(user);
     const refreshToken = generateRefreshToken(user);
-    await TokenModel.create({
-      userId: user._id,
-      token: refreshToken,
-      type: 'refreshToken'
-    });
+    await TokenModel.findOneAndUpdate(
+      {
+        userId: user._id,
+        type: 'refreshToken'
+      },
+      {
+        token: refreshToken
+      },
+      {
+        upsert: true
+      }
+    );
     return { refreshToken, token, message: 'Login successful' };
   } else {
     throw new Error('Missing required fields');

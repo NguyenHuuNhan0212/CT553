@@ -1,5 +1,9 @@
-const { get } = require('mongoose');
-const { getAllUsers, getMyInfo } = require('../services/User');
+const {
+  getAllUsers,
+  getMyInfo,
+  uploadAvatarService,
+  uploadProfile
+} = require('../services/User');
 const getUsers = async (req, res) => {
   try {
     const users = await getAllUsers();
@@ -20,4 +24,30 @@ const getMyProfile = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-module.exports = { getUsers, getMyProfile };
+
+const uploadAvatar = async (req, res) => {
+  try {
+    const file = req.file;
+    const userId = req.user.userId;
+    const result = await uploadAvatarService(file, userId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err });
+  }
+};
+const uploadProfileController = async (req, res) => {
+  try {
+    const { fullName, email } = req.body;
+    const { userId } = req.user;
+    const result = await uploadProfile(userId, { fullName, email });
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err });
+  }
+};
+module.exports = {
+  getUsers,
+  getMyProfile,
+  uploadAvatar,
+  uploadProfileController
+};

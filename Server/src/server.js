@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const path = require('path');
 const connectDB = require('./config/db');
 const chatRoutes = require('./routes/chatRoutes');
 const authRoute = require('./routes/authRoutes');
@@ -15,6 +16,7 @@ app.use(express.json());
 
 connectDB(process.env.MONGO_URI);
 
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 app.get('/health', (_, res) => res.json({ ok: true }));
 
 app.use('/api/chat', chatRoutes);

@@ -7,7 +7,6 @@ const {
 } = require('../services/Auth/index.js');
 const registerUser = async (req, res) => {
   try {
-    console.log(req.body);
     const result = await register(req.body);
     return res.status(201).json(result);
   } catch (error) {
