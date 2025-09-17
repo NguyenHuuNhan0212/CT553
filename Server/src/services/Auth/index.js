@@ -28,11 +28,11 @@ const login = async (data) => {
   if (data.email && data.password) {
     const user = await UserModel.findOne({ email: data.email });
     if (!user) {
-      throw new Error('Invalid email or password');
+      throw new Error('Email hoặc mật khẩu không đúng.');
     }
     const isMatch = await bcrypt.compare(data.password, user.password);
     if (!isMatch) {
-      throw new Error('Invalid email or password');
+      throw new Error('Email hoặc mật khẩu không đúng.');
     }
     const token = generateToken(user);
     const refreshToken = generateRefreshToken(user);

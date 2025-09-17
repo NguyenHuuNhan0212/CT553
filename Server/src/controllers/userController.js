@@ -2,14 +2,16 @@ const {
   getAllUsers,
   getMyInfo,
   uploadAvatarService,
-  uploadProfile
+  uploadProfile,
+  changePassword,
+  upgradeToProvider
 } = require('../services/User');
 const getUsers = async (req, res) => {
   try {
     const users = await getAllUsers();
     res.json(users);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: error.message });
   }
 };
 const getMyProfile = async (req, res) => {
@@ -21,7 +23,7 @@ const getMyProfile = async (req, res) => {
     }
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -32,7 +34,8 @@ const uploadAvatar = async (req, res) => {
     const result = await uploadAvatarService(file, userId);
     return res.status(200).json(result);
   } catch (err) {
-    res.status(500).json({ message: err });
+    console.log(err);
+    res.status(500).json({ message: err.message });
   }
 };
 const uploadProfileController = async (req, res) => {
@@ -42,12 +45,35 @@ const uploadProfileController = async (req, res) => {
     const result = await uploadProfile(userId, { fullName, email });
     return res.status(200).json(result);
   } catch (err) {
-    res.status(500).json({ message: err });
+    res.status(500).json({ message: err.message });
+  }
+};
+const changePass = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { currentPassword, newPassword } = req.body;
+    console.log(currentPassword, newPassword);
+    const result = await changePassword(userId, currentPassword, newPassword);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+const upgradeToProviderController = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const data = req.body;
+    const result = await upgradeToProvider(userId, data);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 module.exports = {
   getUsers,
   getMyProfile,
   uploadAvatar,
-  uploadProfileController
+  uploadProfileController,
+  changePass,
+  upgradeToProviderController
 };

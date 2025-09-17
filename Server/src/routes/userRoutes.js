@@ -2,7 +2,9 @@ const {
   getUsers,
   getMyProfile,
   uploadAvatar,
-  uploadProfileController
+  uploadProfileController,
+  changePass,
+  upgradeToProviderController
 } = require('../controllers/userController.js');
 const upload = require('../middlewares/upload.js');
 const express = require('express');
@@ -12,4 +14,6 @@ router.get('/users', getUsers);
 router.get('/my-profile', verifyToken, getMyProfile);
 router.post('/avatar', verifyToken, upload.single('avatar'), uploadAvatar);
 router.patch('/update-profile', verifyToken, uploadProfileController);
+router.post('/change-password', verifyToken, changePass);
+router.post('/upgrade-to-provider', verifyToken, upgradeToProviderController);
 module.exports = router;
