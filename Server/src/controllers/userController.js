@@ -40,9 +40,9 @@ const uploadAvatar = async (req, res) => {
 };
 const uploadProfileController = async (req, res) => {
   try {
-    const { fullName, email } = req.body;
+    const data = req.body;
     const { userId } = req.user;
-    const result = await uploadProfile(userId, { fullName, email });
+    const result = await uploadProfile(userId, data);
     return res.status(200).json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });

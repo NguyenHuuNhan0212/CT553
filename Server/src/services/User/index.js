@@ -5,7 +5,13 @@ const getAllUsers = async () => {
   return await UserModel.find({}, '-password');
 };
 const getMyInfo = async (id) => {
-  return await UserModel.findById(id, '-password');
+  const user = await UserModel.findById(id, '-password').lean();
+  if (user && user.role === 'provider') {
+    const ownerInfo = await OwnerModel.findOne({ userId: user._id }).lean();
+    return { ...user, ...ownerInfo };
+  } else {
+    return user;
+  }
 };
 
 const uploadAvatarService = async (file, userId) => {
@@ -24,15 +30,43 @@ const uploadProfile = async (id, data) => {
   if (!user) {
     throw new Error('Người dùng không tồn tại!');
   }
-  const updateUser = await UserModel.findByIdAndUpdate(id, {
-    fullName: data.fullName,
-    email: data.email
-  });
+  let updateProvider = null;
+  if (user.role === 'provider') {
+    const checkPhone = await OwnerModel.findOne({
+      phone: data.phone,
+      userId: { $ne: user._id }
+    });
+    if (checkPhone) {
+      throw new Error('Số điện thoại đã tồn tại.');
+    }
+    updateProvider = await OwnerModel.findOneAndUpdate(
+      { userId: user._id },
+      {
+        phone: data.phone,
+        bankAccount: data.bankAccount,
+        bankName: data.bankName,
+        cardHolderName: data.cardHolderName,
+        cardNumber: data.cardNumber
+      },
+      { new: true }
+    );
+  }
+
+  const updateUser = await UserModel.findByIdAndUpdate(
+    id,
+    { fullName: data.fullName, email: data.email },
+    { new: true }
+  ).lean();
+
   return {
     message: 'Cập nhật thông tin thành công.',
-    user: updateUser
+    user: {
+      ...updateUser,
+      ...(updateProvider ? { ownerInfo: updateProvider } : {})
+    }
   };
 };
+
 const changePassword = async (id, password, newPassword) => {
   const user = await UserModel.findById(id);
 
@@ -63,8 +97,15 @@ const upgradeToProvider = async (id, data) => {
   } else if (providerCheck && user.role === 'user') {
     throw new Error('Bạn đã đăng ký. Vui lòng chờ Quản trị viên duyệt.');
   } else {
+    const checkPhone = await OwnerModel.findOne({
+      phone: data.phone
+    });
+    if (checkPhone) {
+      throw new Error('Số điện thoại đã tồn tại.');
+    }
     const ownerInfo = new OwnerModel({
       userId: id,
+      phone: data.phone,
       bankAccount: data.bankAccount,
       bankName: data.bankName,
       cardHolderName: data.cardHolderName,
