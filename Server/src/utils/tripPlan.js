@@ -1,4 +1,5 @@
 function prepareAIInput(places, hotels, numDays) {
+  console.log(places);
   return {
     numDays,
     grouped: {

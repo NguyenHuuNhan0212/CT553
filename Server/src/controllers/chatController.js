@@ -167,14 +167,30 @@ const ask = async (req, res) => {
 
         answer = await chatWithLLM(messages);
       }
-      await ChatMessage.create({ userId, role: 'assistant', content: answer });
+      await ChatMessage.create({
+        userId,
+        role: 'assistant',
+        content: answer,
+        city: cityToUse
+      });
     } else if (category === 'plan_trip') {
-      const city = await extractCity(question);
+      let city = await extractCity(question);
+
+      // Nếu không có city trong câu hỏi, lấy từ message gần nhất
+      if (city === 'NULL') {
+        const lastCityMsg = await ChatMessage.findOne({
+          userId,
+          city: { $exists: true, $ne: 'NULL' }
+        }).sort({ createdAt: -1 });
+        if (lastCityMsg) city = lastCityMsg.city;
+      }
+
       const daysMatch = question.match(/(\d+)\s*ngày/);
       const numDays = daysMatch ? parseInt(daysMatch[1]) : null;
 
       if (!numDays) {
-        answer = 'Vui lòng cho biết số ngày bạn muốn lập kế hoạch du lịch.';
+        answer =
+          'Vui lòng cho biết số ngày bạn muốn lập kế hoạch du lịch. Để tôi có thể hỗ trợ bạn tạo kế hoạch.';
 
         await ChatMessage.create({
           userId,

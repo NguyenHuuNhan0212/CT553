@@ -56,7 +56,10 @@ function findNearestHotel(hotels, eveningPlace) {
   let bestScore = 0;
 
   hotels.forEach((hotel) => {
-    const score = stringSimilarity(eveningPlace.address, hotel.address);
+    const score = stringSimilarity(
+      eveningPlace.address?.name,
+      hotel.address?.name
+    );
     if (score > bestScore) {
       bestScore = score;
       bestHotel = hotel;
@@ -84,7 +87,10 @@ function pickMultiple(list, backupList, count = 1) {
 }
 
 async function createTripPlan(city, numDays = 1) {
-  const places = await Place.find({ address: { $regex: city, $options: 'i' } });
+  const places = await Place.find({
+    address: { $regex: city, $options: 'i' }
+  });
+
   if (!places.length) return null;
 
   let hotels = shuffleArray(places.filter((p) => p.type === 'hotel'));

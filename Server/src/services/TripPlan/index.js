@@ -3,7 +3,10 @@ const { prepareAIInput } = require('../../utils/tripPlan');
 const { generateTripPlanWithAI } = require('./aiClientToGenerateTripPlan');
 
 async function generateTripPlan(city, numDays) {
-  const places = await Place.find({ address: { $regex: city, $options: 'i' } });
+  const places = await Place.find({
+    address: { $regex: cityToUse, $options: 'i' }
+  });
+
   if (!places || places.length === 0) {
     return {
       message: 'No Result Of This City'
