@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const serviceOtherSchema = new mongoose.Schema(
   {
@@ -16,4 +16,4 @@ const serviceOtherSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model('ServiceOther', serviceOtherSchema);
+module.exports = mongoose.model('ServiceOther', serviceOtherSchema);

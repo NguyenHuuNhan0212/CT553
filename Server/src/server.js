@@ -7,6 +7,7 @@ const chatRoutes = require('./routes/chatRoutes');
 const authRoute = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const tripPlanRoutes = require('./routes/tripPlanRoutes');
+const placeRoutes = require('./routes/placeRoutes');
 dotenv.config();
 
 const app = express();
@@ -23,5 +24,6 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/auth', authRoute);
 app.use('/api/trip-plans', tripPlanRoutes);
 app.use('/api', userRoutes);
+app.use('/api/places', placeRoutes);
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Backend listening on ${PORT}`));

@@ -8,9 +8,9 @@ const placeSchema = new mongoose.Schema(
       enum: ['hotel', 'restaurant', 'touristSpot', 'cafe'],
       required: true
     },
-    name: String,
-    address: { type: String },
-
+    name: { type: String, required: true },
+    address: { type: String, required: true },
+    images: [{ type: String }],
     description: String,
     avgPrice: Number
   },
