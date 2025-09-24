@@ -12,7 +12,9 @@ const placeSchema = new mongoose.Schema(
     address: { type: String, required: true },
     images: [{ type: String }],
     description: String,
-    avgPrice: Number
+    avgPrice: Number,
+    isActive: { type: Boolean, default: true },
+    totalServices: { type: Number, required: true, default: 0 }
   },
   { timestamps: true }
 );

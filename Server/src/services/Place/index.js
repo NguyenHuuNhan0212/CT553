@@ -14,7 +14,7 @@ const addPlaceService = async (userId, data) => {
     roomTypes,
     services
   } = data;
-
+  let totalServices = 0;
   const checkPlace = await PlaceModel.findOne({ userId, type, name, address });
   if (checkPlace) {
     throw new Error('Địa điểm đã tồn tại. Bạn không thể thêm nữa.');
@@ -32,6 +32,7 @@ const addPlaceService = async (userId, data) => {
     let hotel = null;
 
     if (type === 'hotel') {
+      totalServices += 1;
       hotel = new HotelModel({
         placeId: place._id,
         commissionPerCentage
@@ -73,6 +74,7 @@ const addPlaceService = async (userId, data) => {
     }
     if (Array.isArray(parsedServices)) {
       for (let s of parsedServices) {
+        totalServices += 1;
         const service = new ServiceModel({
           name: s.name,
           description: s.description,
@@ -83,10 +85,29 @@ const addPlaceService = async (userId, data) => {
         await service.save();
       }
     }
+    const updatePlace = await PlaceModel.findByIdAndUpdate(
+      place._id,
+      {
+        totalServices
+      },
+      { new: true }
+    );
     return {
       message: 'Thêm địa điểm mới thành công.'
     };
   }
 };
 
-module.exports = { addPlaceService };
+const getAllPlaceOffUser = async (userId) => {
+  const places = await PlaceModel.find({ userId });
+  if (!places.length) {
+    throw new Error('Bạn chưa đăng địa điểm du lịch nào.');
+  } else {
+    const placesId = places.map((place) => place._id);
+    return {
+      places,
+      message: 'Lấy danh sách địa điểm du lịch của người dùng thành công.'
+    };
+  }
+};
+module.exports = { addPlaceService, getAllPlaceOffUser };
