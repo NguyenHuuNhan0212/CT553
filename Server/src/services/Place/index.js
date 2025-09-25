@@ -10,7 +10,6 @@ const addPlaceService = async (userId, data) => {
     address,
     images,
     description,
-    avgPrice,
     commissionPerCentage,
     roomTypes,
     services
@@ -26,8 +25,7 @@ const addPlaceService = async (userId, data) => {
       name,
       address,
       images: images || [],
-      description,
-      avgPrice
+      description
     });
     await place.save();
     let hotel = null;
@@ -145,4 +143,23 @@ const getOnePlace = async (placeId) => {
     }
   }
 };
-module.exports = { addPlaceService, getAllPlaceOffUser, getOnePlace };
+const getAllPlace = async () => {
+  return await PlaceModel.find();
+};
+const getPlaceRelative = async (id, type, address) => {
+  const places = await PlaceModel.find({
+    type: type,
+    address: { $regex: address, $options: 'i' },
+    _id: { $ne: id }
+  });
+  return {
+    places
+  };
+};
+module.exports = {
+  addPlaceService,
+  getAllPlaceOffUser,
+  getOnePlace,
+  getAllPlace,
+  getPlaceRelative
+};

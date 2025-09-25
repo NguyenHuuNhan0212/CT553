@@ -1,7 +1,9 @@
 const {
   addPlaceService,
   getAllPlaceOffUser,
-  getOnePlace
+  getOnePlace,
+  getAllPlace,
+  getPlaceRelative
 } = require('../services/Place');
 
 const addPlace = async (req, res) => {
@@ -38,8 +40,27 @@ const getInfoOnePlace = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+const getAll = async (req, res) => {
+  try {
+    const result = await getAllPlace();
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+const getPlaceRelativeByTypeAndAddress = async (req, res) => {
+  try {
+    const { id, type, address } = req.query;
+    const result = await getPlaceRelative(id, type, address);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   addPlace,
   getAllPlaceOffUserById,
-  getInfoOnePlace
+  getInfoOnePlace,
+  getAll,
+  getPlaceRelativeByTypeAndAddress
 };
