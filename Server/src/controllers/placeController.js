@@ -1,4 +1,8 @@
-const { addPlaceService, getAllPlaceOffUser } = require('../services/Place');
+const {
+  addPlaceService,
+  getAllPlaceOffUser,
+  getOnePlace
+} = require('../services/Place');
 
 const addPlace = async (req, res) => {
   try {
@@ -22,10 +26,20 @@ const getAllPlaceOffUserById = async (req, res) => {
     const result = await getAllPlaceOffUser(userId);
     return res.status(200).json(result);
   } catch (err) {
-    res.status(500).json(err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+const getInfoOnePlace = async (req, res) => {
+  try {
+    const { placeId } = req.params;
+    const result = await getOnePlace(placeId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 module.exports = {
   addPlace,
-  getAllPlaceOffUserById
+  getAllPlaceOffUserById,
+  getInfoOnePlace
 };

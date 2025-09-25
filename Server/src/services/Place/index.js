@@ -2,6 +2,7 @@ const PlaceModel = require('../../models/Place');
 const HotelModel = require('../../models/Hotel');
 const ServiceModel = require('../../models/ServiceOther');
 const RoomTypeModel = require('../../models/RoomType');
+const OwnerInfo = require('../../models/OwnerInfo');
 const addPlaceService = async (userId, data) => {
   const {
     type,
@@ -110,4 +111,38 @@ const getAllPlaceOffUser = async (userId) => {
     };
   }
 };
-module.exports = { addPlaceService, getAllPlaceOffUser };
+
+const getOnePlace = async (placeId) => {
+  const place = await PlaceModel.findById(placeId);
+  if (!place) {
+    throw new Error('Không tìm thấy địa điểm bạn chọn.');
+  } else {
+    const services = await ServiceModel.find({ placeId });
+    const ownerInfo = await OwnerInfo.findOne({
+      userId: place.userId
+    }).populate('userId', 'fullName');
+    if (place.type === 'hotel') {
+      const hotel = await HotelModel.findOne({ placeId });
+      if (!hotel) {
+        throw new Error('Không tìm thấy khách sạn/nhà nghĩ này.');
+      } else {
+        const roomTypes = await RoomTypeModel.find({ hotelId: hotel._id });
+        return {
+          place,
+          services,
+          roomTypes,
+          ownerInfo,
+          message: 'Lấy thông tin địa điểm thành công'
+        };
+      }
+    } else {
+      return {
+        place,
+        ownerInfo,
+        services,
+        message: 'Lấy thông tin địa điểm thành công'
+      };
+    }
+  }
+};
+module.exports = { addPlaceService, getAllPlaceOffUser, getOnePlace };
