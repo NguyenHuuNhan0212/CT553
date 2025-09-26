@@ -98,16 +98,14 @@ const addPlaceService = async (userId, data) => {
 };
 
 const getAllPlaceOffUser = async (userId) => {
-  const places = await PlaceModel.find({ userId });
-  if (!places.length) {
-    throw new Error('Bạn chưa đăng địa điểm du lịch nào.');
-  } else {
-    const placesId = places.map((place) => place._id);
-    return {
-      places,
-      message: 'Lấy danh sách địa điểm du lịch của người dùng thành công.'
-    };
-  }
+  const places = await PlaceModel.find({ userId, deleted: false }).sort({
+    createdAt: -1
+  });
+
+  return {
+    places,
+    message: 'Lấy danh sách địa điểm du lịch của người dùng thành công.'
+  };
 };
 
 const getOnePlace = async (placeId) => {
@@ -144,22 +142,57 @@ const getOnePlace = async (placeId) => {
   }
 };
 const getAllPlace = async () => {
-  return await PlaceModel.find();
+  return await PlaceModel.find({ deleted: false });
 };
 const getPlaceRelative = async (id, type, address) => {
   const places = await PlaceModel.find({
     type: type,
     address: { $regex: address, $options: 'i' },
-    _id: { $ne: id }
+    _id: { $ne: id },
+    deleted: false
   });
   return {
     places
   };
+};
+
+const removePlace = async (userId, placeId) => {
+  const place = await PlaceModel.findOne({ userId, _id: placeId });
+  if (!place) {
+    throw new Error('Địa điểm không tồn tại');
+  } else {
+    const deletedPlace = await PlaceModel.findByIdAndUpdate(
+      placeId,
+      { deleted: true },
+      { new: true }
+    );
+    return {
+      message: 'Xóa địa điểm thành công'
+    };
+  }
+};
+const updateActivePlace = async (userId, placeId) => {
+  const place = await PlaceModel.findById(placeId);
+  if (!place) {
+    throw new Error('Địa điểm không tồn tại');
+  } else {
+    const updateStatusActive = await PlaceModel.findByIdAndUpdate(
+      { userId, _id: placeId },
+      { isActive: !place.isActive },
+      { new: true }
+    );
+    return {
+      place,
+      message: 'Cập nhật trạng thái hoạt động thành công.'
+    };
+  }
 };
 module.exports = {
   addPlaceService,
   getAllPlaceOffUser,
   getOnePlace,
   getAllPlace,
-  getPlaceRelative
+  getPlaceRelative,
+  removePlace,
+  updateActivePlace
 };

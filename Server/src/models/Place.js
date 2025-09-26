@@ -13,6 +13,7 @@ const placeSchema = new mongoose.Schema(
     images: [{ type: String }],
     description: String,
     isActive: { type: Boolean, default: true },
+    deleted: { type: Boolean, default: false },
     totalServices: { type: Number, required: true, default: 0 }
   },
   { timestamps: true }

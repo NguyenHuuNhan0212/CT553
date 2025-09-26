@@ -3,7 +3,9 @@ const {
   getAllPlaceOffUser,
   getOnePlace,
   getAllPlace,
-  getPlaceRelative
+  getPlaceRelative,
+  removePlace,
+  updateActivePlace
 } = require('../services/Place');
 
 const addPlace = async (req, res) => {
@@ -57,10 +59,33 @@ const getPlaceRelativeByTypeAndAddress = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const deletePlace = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { placeId } = req.params;
+    const result = await removePlace(userId, placeId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+const updateStatusActive = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { placeId } = req.params;
+    const result = await updateActivePlace(userId, placeId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   addPlace,
   getAllPlaceOffUserById,
   getInfoOnePlace,
   getAll,
-  getPlaceRelativeByTypeAndAddress
+  getPlaceRelativeByTypeAndAddress,
+  deletePlace,
+  updateStatusActive
 };
