@@ -5,7 +5,8 @@ const {
   getAll,
   getPlaceRelativeByTypeAndAddress,
   deletePlace,
-  updateStatusActive
+  updateStatusActive,
+  updatePlace
 } = require('../controllers/placeController');
 const express = require('express');
 const router = express.Router();
@@ -15,7 +16,8 @@ router.post('/', verifyToken, upload.array('images'), addPlace);
 router.get('/user', verifyToken, getAllPlaceOffUserById);
 router.get('/relative', getPlaceRelativeByTypeAndAddress);
 router.get('/:placeId', getInfoOnePlace);
-router.patch('/:placeId', verifyToken, updateStatusActive);
+router.patch('/update-status-active/:placeId', verifyToken, updateStatusActive);
+router.put('/:placeId', verifyToken, upload.array('images'), updatePlace);
 router.delete('/:placeId', verifyToken, deletePlace);
 router.get('/', getAll);
 module.exports = router;

@@ -5,7 +5,8 @@ const {
   getAllPlace,
   getPlaceRelative,
   removePlace,
-  updateActivePlace
+  updateActivePlace,
+  updatePlaceService
 } = require('../services/Place');
 
 const addPlace = async (req, res) => {
@@ -80,6 +81,25 @@ const updateStatusActive = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+const updatePlace = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const placeId = req.params.placeId;
+    const data = req.body;
+
+    // xử lý images
+    let images = [];
+    if (req.files && req.files.length > 0) {
+      images = req.files.map((file) => `/uploads/${file.filename}`);
+    }
+    data.images = images;
+
+    const result = await updatePlaceService(placeId, userId, data);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
 module.exports = {
   addPlace,
   getAllPlaceOffUserById,
@@ -87,5 +107,6 @@ module.exports = {
   getAll,
   getPlaceRelativeByTypeAndAddress,
   deletePlace,
-  updateStatusActive
+  updateStatusActive,
+  updatePlace
 };

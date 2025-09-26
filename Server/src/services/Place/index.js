@@ -126,6 +126,7 @@ const getOnePlace = async (placeId) => {
         return {
           place,
           services,
+          hotel,
           roomTypes,
           ownerInfo,
           message: 'Lấy thông tin địa điểm thành công'
@@ -142,14 +143,15 @@ const getOnePlace = async (placeId) => {
   }
 };
 const getAllPlace = async () => {
-  return await PlaceModel.find({ deleted: false });
+  return await PlaceModel.find({ deleted: false, isApprove: true });
 };
 const getPlaceRelative = async (id, type, address) => {
   const places = await PlaceModel.find({
     type: type,
     address: { $regex: address, $options: 'i' },
     _id: { $ne: id },
-    deleted: false
+    deleted: false,
+    isApprove: true
   });
   return {
     places
@@ -187,6 +189,103 @@ const updateActivePlace = async (userId, placeId) => {
     };
   }
 };
+const updatePlaceService = async (placeId, userId, data) => {
+  const {
+    type,
+    name,
+    address,
+    images,
+    description,
+    commissionPerCentage,
+    roomTypes,
+    services
+  } = data;
+
+  const place = await PlaceModel.findOne({ _id: placeId, userId });
+  if (!place) {
+    throw new Error('Địa điểm không tồn tại hoặc bạn không có quyền sửa.');
+  }
+
+  let totalServices = 0;
+
+  place.type = type;
+  place.name = name;
+  place.address = address;
+  place.description = description;
+  if (images && images.length > 0) {
+    place.images = images;
+  }
+  await place.save();
+
+  // Nếu là hotel thì cập nhật hotel + roomTypes
+  if (type === 'hotel') {
+    let hotel = await HotelModel.findOne({ placeId: place._id });
+    if (!hotel) {
+      hotel = new HotelModel({
+        placeId: place._id,
+        commissionPerCentage
+      });
+    } else {
+      hotel.commissionPerCentage = commissionPerCentage;
+    }
+    await hotel.save();
+
+    await RoomTypeModel.deleteMany({ hotelId: hotel._id });
+    let parsedRoomTypes = [];
+    if (typeof roomTypes === 'string') {
+      try {
+        parsedRoomTypes = JSON.parse(roomTypes);
+      } catch (err) {
+        console.error('Parse roomTypes error:', err);
+      }
+    } else if (Array.isArray(roomTypes)) {
+      parsedRoomTypes = roomTypes;
+    }
+    if (Array.isArray(parsedRoomTypes)) {
+      for (let rt of parsedRoomTypes) {
+        const roomType = new RoomTypeModel({
+          hotelId: hotel._id,
+          name: rt.name,
+          capacity: rt.capacity,
+          totalRooms: rt.totalRooms,
+          pricePerNight: rt.pricePerNight
+        });
+        await roomType.save();
+      }
+    }
+    totalServices += 1;
+  }
+
+  await ServiceModel.deleteMany({ placeId: place._id });
+  let parsedServices = [];
+  if (typeof services === 'string') {
+    try {
+      parsedServices = JSON.parse(services);
+    } catch (err) {
+      console.error('Parse services error:', err);
+    }
+  } else if (Array.isArray(services)) {
+    parsedServices = services;
+  }
+  if (Array.isArray(parsedServices)) {
+    for (let s of parsedServices) {
+      totalServices += 1;
+      const service = new ServiceModel({
+        name: s.name,
+        description: s.description,
+        price: s.price,
+        type: s.type,
+        placeId: place._id
+      });
+      await service.save();
+    }
+  }
+
+  await PlaceModel.findByIdAndUpdate(place._id, { totalServices });
+
+  return { message: 'Cập nhật địa điểm thành công.' };
+};
+
 module.exports = {
   addPlaceService,
   getAllPlaceOffUser,
@@ -194,5 +293,6 @@ module.exports = {
   getAllPlace,
   getPlaceRelative,
   removePlace,
-  updateActivePlace
+  updateActivePlace,
+  updatePlaceService
 };
