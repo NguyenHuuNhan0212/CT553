@@ -2,13 +2,15 @@ const mongoose = require('mongoose');
 
 const hotelSchema = new mongoose.Schema(
   {
-    placeId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Place',
-      required: true
-    },
-
-    commissionPerCentage: { type: Number }
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    name: { type: String, required: true },
+    address: { type: String, required: true },
+    images: [{ type: String }],
+    description: String,
+    isActive: { type: Boolean, default: true },
+    isApprove: { type: Boolean, default: false },
+    deleted: { type: Boolean, default: false },
+    totalServices: { type: Number, required: true, default: 0 }
   },
   { timestamps: true }
 );

@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const UserModel = require('../../models/User');
-const OwnerModel = require('../../models/OwnerInfo');
+const OwnerModel = require('../../models/Supplier');
 const getAllUsers = async () => {
   return await UserModel.find({}, '-password');
 };

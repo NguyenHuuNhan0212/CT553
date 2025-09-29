@@ -1,21 +1,21 @@
 const {
-  addPlaceService,
-  getAllPlaceOffUser,
-  getOnePlace,
-  getAllPlace,
-  getPlaceRelative,
-  removePlace,
-  updateActivePlace,
-  updatePlaceService
-} = require('../services/Place');
+  addHotel,
+  getAllHotelOfUser,
+  getOneHotel,
+  getAllHotel,
+  getHotelRelative,
+  removeHotel,
+  updateActiveHotel,
+  updateHotel
+} = require('../services/Hotel');
 
-const addPlace = async (req, res) => {
+const addHotelController = async (req, res) => {
   try {
     const userId = req.user.userId;
     const data = req.body;
     const imagePaths =
       req.files?.map((file) => `uploads/${file.filename}`) || [];
-    const result = await addPlaceService(userId, {
+    const result = await addHotel(userId, {
       ...data,
       images: imagePaths
     });
@@ -25,10 +25,10 @@ const addPlace = async (req, res) => {
   }
 };
 
-const getInfoOnePlace = async (req, res) => {
+const getInfoOneHotel = async (req, res) => {
   try {
-    const { placeId } = req.params;
-    const result = await getOnePlace(placeId);
+    const { hotelId } = req.params;
+    const result = await getOneHotel(hotelId);
     return res.status(200).json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -36,27 +36,27 @@ const getInfoOnePlace = async (req, res) => {
 };
 const getAll = async (req, res) => {
   try {
-    const result = await getAllPlace();
+    const result = await getAllHotel();
     res.status(200).json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
-const getPlaceRelativeByTypeAndAddress = async (req, res) => {
+const getHotelRelativeByTypeAndAddress = async (req, res) => {
   try {
-    const { id, type, address } = req.query;
-    const result = await getPlaceRelative(id, type, address);
+    const { id, address } = req.query;
+    const result = await getHotelRelative(id, address);
     return res.status(200).json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-const deletePlace = async (req, res) => {
+const deleteHotel = async (req, res) => {
   try {
     const { userId } = req.user;
-    const { placeId } = req.params;
-    const result = await removePlace(userId, placeId);
+    const { hotelId } = req.params;
+    const result = await removeHotel(userId, hotelId);
     return res.status(200).json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -65,17 +65,17 @@ const deletePlace = async (req, res) => {
 const updateStatusActive = async (req, res) => {
   try {
     const { userId } = req.user;
-    const { placeId } = req.params;
-    const result = await updateActivePlace(userId, placeId);
+    const { hotelId } = req.params;
+    const result = await updateActiveHotel(userId, hotelId);
     res.status(200).json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
-const updatePlace = async (req, res) => {
+const updateHotelController = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const placeId = req.params.placeId;
+    const hotelId = req.params.hotelId;
     const data = req.body;
 
     // xử lý images
@@ -85,18 +85,18 @@ const updatePlace = async (req, res) => {
     }
     data.images = images;
 
-    const result = await updatePlaceService(placeId, userId, data);
+    const result = await updateHotel(hotelId, userId, data);
     res.json(result);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
 module.exports = {
-  addPlace,
-  getInfoOnePlace,
+  addHotelController,
+  getInfoOneHotel,
   getAll,
-  getPlaceRelativeByTypeAndAddress,
-  deletePlace,
+  getHotelRelativeByTypeAndAddress,
+  deleteHotel,
   updateStatusActive,
-  updatePlace
+  updateHotelController
 };

@@ -1,12 +1,12 @@
 const mongoose = require('mongoose');
 
-const itineraryDetailSchema = new mongoose.Schema(
+const serviceOtherSchema = new mongoose.Schema(
   {
-    itineraryId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Itinerary',
-      required: true
-    },
+    name: { type: String, required: true },
+    description: String,
+    price: { type: Number, required: true },
+    type: String,
+    isActive: { type: Boolean, default: true },
     placeId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Place'
@@ -14,16 +14,11 @@ const itineraryDetailSchema = new mongoose.Schema(
     hotelId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Hotel'
-    },
-    visitDay: { type: String, required: true },
-    note: String,
-    startTime: String,
-    endTime: String
+    }
   },
   { timestamps: true }
 );
-
-itineraryDetailSchema.pre('validate', function (next) {
+serviceOtherSchema.pre('validate', function (next) {
   if (!this.placeId && !this.hotelId) {
     return next(new Error('Cần chọn Place hoặc Hotel'));
   }
@@ -32,5 +27,4 @@ itineraryDetailSchema.pre('validate', function (next) {
   }
   next();
 });
-
-module.exports = mongoose.model('ItineraryDetail', itineraryDetailSchema);
+module.exports = mongoose.model('Service', serviceOtherSchema);

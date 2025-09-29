@@ -1,10 +1,9 @@
 const mongoose = require('mongoose');
-
-const itineraryDetailSchema = new mongoose.Schema(
+const userFavoriteSchema = new mongoose.Schema(
   {
-    itineraryId: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Itinerary',
+      ref: 'User',
       required: true
     },
     placeId: {
@@ -15,15 +14,12 @@ const itineraryDetailSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Hotel'
     },
-    visitDay: { type: String, required: true },
-    note: String,
-    startTime: String,
-    endTime: String
+    addDate: { type: Date, default: Date.now() }
   },
   { timestamps: true }
 );
 
-itineraryDetailSchema.pre('validate', function (next) {
+userFavoriteSchema.pre('validate', function (next) {
   if (!this.placeId && !this.hotelId) {
     return next(new Error('Cần chọn Place hoặc Hotel'));
   }
@@ -32,5 +28,4 @@ itineraryDetailSchema.pre('validate', function (next) {
   }
   next();
 });
-
-module.exports = mongoose.model('ItineraryDetail', itineraryDetailSchema);
+module.exports = mongoose.model('UserFavorite', userFavoriteSchema);

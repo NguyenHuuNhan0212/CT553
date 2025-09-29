@@ -5,7 +5,7 @@ const placeSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // chủ sở hữu
     type: {
       type: String,
-      enum: ['hotel', 'restaurant', 'touristSpot', 'cafe'],
+      enum: ['restaurant', 'touristSpot', 'cafe'],
       required: true
     },
     name: { type: String, required: true },

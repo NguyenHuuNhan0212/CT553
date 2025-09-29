@@ -1,8 +1,6 @@
 const PlaceModel = require('../../models/Place');
-const HotelModel = require('../../models/Hotel');
-const ServiceModel = require('../../models/ServiceOther');
-const RoomTypeModel = require('../../models/RoomType');
-const OwnerInfo = require('../../models/OwnerInfo');
+const ServiceModel = require('../../models/Service');
+const OwnerInfo = require('../../models/Supplier');
 const addPlaceService = async (userId, data) => {
   const {
     type,
@@ -11,7 +9,6 @@ const addPlaceService = async (userId, data) => {
     images,
     description,
     commissionPerCentage,
-    roomTypes,
     services
   } = data;
   let totalServices = 0;
@@ -28,39 +25,6 @@ const addPlaceService = async (userId, data) => {
       description
     });
     await place.save();
-    let hotel = null;
-
-    if (type === 'hotel') {
-      totalServices += 1;
-      hotel = new HotelModel({
-        placeId: place._id,
-        commissionPerCentage
-      });
-      await hotel.save();
-      let parsedRoomTypes = [];
-
-      if (typeof roomTypes === 'string') {
-        try {
-          parsedRoomTypes = JSON.parse(roomTypes);
-        } catch (err) {
-          console.error('Parse roomTypes error:', err);
-        }
-      } else if (Array.isArray(roomTypes)) {
-        parsedRoomTypes = roomTypes;
-      }
-      if (Array.isArray(parsedRoomTypes)) {
-        for (let rt of parsedRoomTypes) {
-          const roomType = new RoomTypeModel({
-            hotelId: hotel._id,
-            name: rt.name,
-            capacity: rt.capacity,
-            totalRooms: rt.totalRooms,
-            pricePerNight: rt.pricePerNight
-          });
-          await roomType.save();
-        }
-      }
-    }
     let parsedServices = [];
     if (typeof services === 'string') {
       try {
@@ -97,17 +61,6 @@ const addPlaceService = async (userId, data) => {
   }
 };
 
-const getAllPlaceOffUser = async (userId) => {
-  const places = await PlaceModel.find({ userId, deleted: false }).sort({
-    createdAt: -1
-  });
-
-  return {
-    places,
-    message: 'Lấy danh sách địa điểm du lịch của người dùng thành công.'
-  };
-};
-
 const getOnePlace = async (placeId) => {
   const place = await PlaceModel.findById(placeId);
   if (!place) {
@@ -117,29 +70,13 @@ const getOnePlace = async (placeId) => {
     const ownerInfo = await OwnerInfo.findOne({
       userId: place.userId
     }).populate('userId', 'fullName');
-    if (place.type === 'hotel') {
-      const hotel = await HotelModel.findOne({ placeId });
-      if (!hotel) {
-        throw new Error('Không tìm thấy khách sạn/nhà nghĩ này.');
-      } else {
-        const roomTypes = await RoomTypeModel.find({ hotelId: hotel._id });
-        return {
-          place,
-          services,
-          hotel,
-          roomTypes,
-          ownerInfo,
-          message: 'Lấy thông tin địa điểm thành công'
-        };
-      }
-    } else {
-      return {
-        place,
-        ownerInfo,
-        services,
-        message: 'Lấy thông tin địa điểm thành công'
-      };
-    }
+
+    return {
+      info: place,
+      ownerInfo,
+      services,
+      message: 'Lấy thông tin địa điểm thành công'
+    };
   }
 };
 const getAllPlace = async () => {
@@ -178,7 +115,7 @@ const updateActivePlace = async (userId, placeId) => {
   if (!place) {
     throw new Error('Địa điểm không tồn tại');
   } else {
-    const updateStatusActive = await PlaceModel.findByIdAndUpdate(
+    const updateStatusActive = await PlaceModel.findOneAndUpdate(
       { userId, _id: placeId },
       { isActive: !place.isActive },
       { new: true }
@@ -197,7 +134,6 @@ const updatePlaceService = async (placeId, userId, data) => {
     images,
     description,
     commissionPerCentage,
-    roomTypes,
     services
   } = data;
 
@@ -216,45 +152,6 @@ const updatePlaceService = async (placeId, userId, data) => {
     place.images = images;
   }
   await place.save();
-
-  // Nếu là hotel thì cập nhật hotel + roomTypes
-  if (type === 'hotel') {
-    let hotel = await HotelModel.findOne({ placeId: place._id });
-    if (!hotel) {
-      hotel = new HotelModel({
-        placeId: place._id,
-        commissionPerCentage
-      });
-    } else {
-      hotel.commissionPerCentage = commissionPerCentage;
-    }
-    await hotel.save();
-
-    await RoomTypeModel.deleteMany({ hotelId: hotel._id });
-    let parsedRoomTypes = [];
-    if (typeof roomTypes === 'string') {
-      try {
-        parsedRoomTypes = JSON.parse(roomTypes);
-      } catch (err) {
-        console.error('Parse roomTypes error:', err);
-      }
-    } else if (Array.isArray(roomTypes)) {
-      parsedRoomTypes = roomTypes;
-    }
-    if (Array.isArray(parsedRoomTypes)) {
-      for (let rt of parsedRoomTypes) {
-        const roomType = new RoomTypeModel({
-          hotelId: hotel._id,
-          name: rt.name,
-          capacity: rt.capacity,
-          totalRooms: rt.totalRooms,
-          pricePerNight: rt.pricePerNight
-        });
-        await roomType.save();
-      }
-    }
-    totalServices += 1;
-  }
 
   await ServiceModel.deleteMany({ placeId: place._id });
   let parsedServices = [];
@@ -288,7 +185,6 @@ const updatePlaceService = async (placeId, userId, data) => {
 
 module.exports = {
   addPlaceService,
-  getAllPlaceOffUser,
   getOnePlace,
   getAllPlace,
   getPlaceRelative,
