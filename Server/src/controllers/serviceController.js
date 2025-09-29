@@ -1,4 +1,4 @@
-const { getAllServicesOfUser } = require('../services/Service/index.js');
+const { getAllServicesOfUser } = require('../services/ServicePlace');
 
 const getAllService = async (req, res) => {
   try {

@@ -2,17 +2,19 @@ const {
   addHotelController,
   getInfoOneHotel,
   getAll,
-  getHotelRelativeByTypeAndAddress,
+  getHotelNearPlace,
   deleteHotel,
   updateStatusActive,
-  updateHotelController
+  updateHotelController,
+  getHotelRelativeByAddress
 } = require('../controllers/hotelController');
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middlewares/authMiddleware');
 const upload = require('../middlewares/upload');
 router.post('/', verifyToken, upload.array('images'), addHotelController);
-router.get('/relative', getHotelRelativeByTypeAndAddress);
+router.get('/near-place', getHotelNearPlace);
+router.get('/relative', getHotelRelativeByAddress);
 router.get('/:hotelId', getInfoOneHotel);
 router.patch('/update-status-active/:hotelId', verifyToken, updateStatusActive);
 router.put(

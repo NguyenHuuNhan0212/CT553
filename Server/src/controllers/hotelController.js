@@ -1,12 +1,12 @@
 const {
   addHotel,
-  getAllHotelOfUser,
   getOneHotel,
   getAllHotel,
-  getHotelRelative,
+  getHotelsNearPlace,
   removeHotel,
   updateActiveHotel,
-  updateHotel
+  updateHotel,
+  getHotelRelative
 } = require('../services/Hotel');
 
 const addHotelController = async (req, res) => {
@@ -42,7 +42,16 @@ const getAll = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-const getHotelRelativeByTypeAndAddress = async (req, res) => {
+const getHotelNearPlace = async (req, res) => {
+  try {
+    const { address } = req.query;
+    const result = await getHotelsNearPlace(address);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+const getHotelRelativeByAddress = async (req, res) => {
   try {
     const { id, address } = req.query;
     const result = await getHotelRelative(id, address);
@@ -51,7 +60,6 @@ const getHotelRelativeByTypeAndAddress = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 const deleteHotel = async (req, res) => {
   try {
     const { userId } = req.user;
@@ -95,8 +103,9 @@ module.exports = {
   addHotelController,
   getInfoOneHotel,
   getAll,
-  getHotelRelativeByTypeAndAddress,
+  getHotelNearPlace,
   deleteHotel,
+  getHotelRelativeByAddress,
   updateStatusActive,
   updateHotelController
 };

@@ -100,10 +100,20 @@ const getOneHotel = async (hotelId) => {
 const getAllHotel = async () => {
   return await HotelModel.find({ deleted: false, isApprove: true });
 };
+const getHotelsNearPlace = async (address) => {
+  const hotels = await HotelModel.find({
+    address: address,
+    deleted: false,
+    isApprove: true
+  });
+  return {
+    hotels
+  };
+};
 const getHotelRelative = async (id, address) => {
   const hotels = await HotelModel.find({
-    address: { $regex: address, $options: 'i' },
     _id: { $ne: id },
+    address: { $regex: address, $options: 'i' },
     deleted: false,
     isApprove: true
   });
@@ -219,8 +229,9 @@ module.exports = {
   addHotel,
   getOneHotel,
   getAllHotel,
-  getHotelRelative,
+  getHotelsNearPlace,
   removeHotel,
+  getHotelRelative,
   updateActiveHotel,
   updateHotel
 };
