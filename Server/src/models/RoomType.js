@@ -9,7 +9,8 @@ const roomTypeSchema = new mongoose.Schema(
     name: { type: String, required: true },
     capacity: { type: Number, required: true },
     totalRooms: { type: Number, required: true },
-    pricePerNight: { type: Number, required: true }
+    pricePerNight: { type: Number, required: true },
+    devices: { type: [String], default: [] }
   },
   { timestamps: true }
 );

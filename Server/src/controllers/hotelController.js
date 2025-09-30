@@ -88,19 +88,32 @@ const updateHotelController = async (req, res) => {
     const hotelId = req.params.hotelId;
     const data = req.body;
 
-    // xử lý images
-    let images = [];
-    if (req.files && req.files.length > 0) {
-      images = req.files.map((file) => `/uploads/${file.filename}`);
+    let finalImages = [];
+
+    if (data.images) {
+      if (Array.isArray(data.images)) {
+        finalImages = data.images.filter((img) => typeof img === 'string');
+      } else if (typeof data.images === 'string') {
+        finalImages = [data.images];
+      }
     }
-    data.images = images;
+
+    // Ảnh mới từ multer
+    if (req.files && req.files.length > 0) {
+      const newImages = req.files.map((file) => `uploads/${file.filename}`);
+      finalImages = [...finalImages, ...newImages];
+    }
+
+    data.images = finalImages;
 
     const result = await updateHotel(hotelId, userId, data);
-    res.json(result);
+    res.status(200).json(result);
   } catch (err) {
+    console.error(err);
     res.status(400).json({ message: err.message });
   }
 };
+
 const getSearchHotels = async (req, res) => {
   try {
     const { location, checkIn, checkOut, guests } = req.query;

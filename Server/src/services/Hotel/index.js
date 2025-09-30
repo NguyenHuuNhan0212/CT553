@@ -37,7 +37,8 @@ const addHotel = async (userId, data) => {
           name: rt.name,
           capacity: rt.capacity,
           totalRooms: rt.totalRooms,
-          pricePerNight: rt.pricePerNight
+          pricePerNight: rt.pricePerNight,
+          devices: rt.devices || []
         });
         await roomType.save();
       }
@@ -89,11 +90,15 @@ const getOneHotel = async (hotelId) => {
     }).populate('userId', 'fullName');
 
     const roomTypes = await RoomTypeModel.find({ hotelId: hotel._id });
+    const minPricePerNight = roomTypes.reduce((min, rt) => {
+      return rt.pricePerNight < min ? rt.pricePerNight : min;
+    }, Infinity);
     return {
       info: hotel,
       services,
       roomTypes,
       ownerInfo,
+      minPricePerNight,
       message: 'Lấy thông tin địa điểm thành công'
     };
   }
@@ -262,7 +267,7 @@ const searchHotels = async (location, checkIn, checkOut, guests) => {
       return {
         hotelId: hotel._id,
         name: hotel.name,
-        description: hotel.description,
+        address: hotel.address,
         images: hotel.images && hotel.images.length ? hotel.images : [],
         minPricePerNight,
         minTotal,

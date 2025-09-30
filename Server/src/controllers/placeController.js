@@ -78,13 +78,23 @@ const updatePlace = async (req, res) => {
     const placeId = req.params.placeId;
     const data = req.body;
 
-    // xử lý images
-    let images = [];
-    if (req.files && req.files.length > 0) {
-      images = req.files.map((file) => `/uploads/${file.filename}`);
-    }
-    data.images = images;
+    let finalImages = [];
 
+    if (data.images) {
+      if (Array.isArray(data.images)) {
+        finalImages = data.images.filter((img) => typeof img === 'string');
+      } else if (typeof data.images === 'string') {
+        finalImages = [data.images];
+      }
+    }
+
+    // Ảnh mới từ multer
+    if (req.files && req.files.length > 0) {
+      const newImages = req.files.map((file) => `uploads/${file.filename}`);
+      finalImages = [...finalImages, ...newImages];
+    }
+
+    data.images = finalImages;
     const result = await updatePlaceService(placeId, userId, data);
     res.json(result);
   } catch (err) {
