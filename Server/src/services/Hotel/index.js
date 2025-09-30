@@ -2,6 +2,7 @@ const HotelModel = require('../../models/Hotel');
 const ServiceModel = require('../../models/Service');
 const RoomTypeModel = require('../../models/RoomType');
 const OwnerInfo = require('../../models/Supplier');
+const { nightsBetween, countBookedRooms } = require('../../utils/hotel');
 const addHotel = async (userId, data) => {
   const { name, address, images, description, roomTypes, services } = data;
   let totalServices = 1;
@@ -224,7 +225,95 @@ const updateHotel = async (hotelId, userId, data) => {
 
   return { message: 'Cập nhật địa điểm thành công.' };
 };
+const searchHotels = async (location, checkIn, checkOut, guests) => {
+  if (!location || !checkIn || !checkOut || !guests) {
+    throw new Error('Thiếu tham số location / checkIn / checkOut / guests');
+  }
+  const nights = nightsBetween(checkIn, checkOut);
+  const hotels = await HotelModel.find({
+    isActive: true,
+    address: new RegExp(location, 'i')
+  }).lean();
 
+  const results = await Promise.all(
+    hotels.map(async (hotel) => {
+      // lấy các room types phù hợp capacity >= guests
+      const roomTypes = await RoomTypeModel.find({
+        hotelId: hotel._id,
+        capacity: { $gte: Number(guests) }
+      }).lean();
+      if (!roomTypes.length) return null;
+      // kiểm tra mỗi loại room có sẵn không
+      const availables = await Promise.all(
+        roomTypes.map(async (rt) => {
+          const booked = await countBookedRooms(rt._id, checkIn, checkOut);
+          const available = (rt.totalRooms || 0) - booked;
+          return { ...rt, available };
+        })
+      );
+
+      const usable = availables.filter((a) => a.available > 0);
+      if (!usable.length) return null;
+
+      // giá thấp nhất (pricePerNight) * nights
+      const minPricePerNight = Math.min(...usable.map((r) => r.pricePerNight));
+      const minTotal = minPricePerNight * nights;
+
+      return {
+        hotelId: hotel._id,
+        name: hotel.name,
+        description: hotel.description,
+        images: hotel.images && hotel.images.length ? hotel.images : [],
+        minPricePerNight,
+        minTotal,
+        nights,
+        availableRoomTypesCount: usable.length
+      };
+    })
+  );
+
+  const filtered = results.filter((r) => r !== null);
+  return filtered;
+};
+
+const getHotelDetail = async (id, checkIn, checkOut, guests) => {
+  const hotel = await HotelModel.findById(id).lean();
+  if (!hotel) {
+    throw new Error('Không tìm thấy địa điểm bạn chọn.');
+  }
+
+  if (!checkIn || !checkOut || !guests) {
+    return { hotel };
+  }
+
+  const nights = nightsBetween(checkIn, checkOut);
+  const roomTypes = await RoomTypeModel.find({
+    hotelId: id,
+    capacity: { $gte: Number(guests) }
+  }).lean();
+
+  const roomStatuses = await Promise.all(
+    roomTypes.map(async (rt) => {
+      const booked = await countBookedRooms(rt._id, checkIn, checkOut);
+      const available = (rt.totalRooms || 0) - booked;
+      return {
+        roomTypeId: rt._id,
+        name: rt.name,
+        capacity: rt.capacity,
+        pricePerNight: rt.pricePerNight,
+        totalRooms: rt.totalRooms,
+        availableRooms: Math.max(0, available),
+        totalPriceForNights: rt.pricePerNight * nights
+      };
+    })
+  );
+
+  return {
+    hotel,
+    nights,
+    roomTypes: roomStatuses
+  };
+};
 module.exports = {
   addHotel,
   getOneHotel,
@@ -233,5 +322,7 @@ module.exports = {
   removeHotel,
   getHotelRelative,
   updateActiveHotel,
-  updateHotel
+  updateHotel,
+  searchHotels,
+  getHotelDetail
 };
