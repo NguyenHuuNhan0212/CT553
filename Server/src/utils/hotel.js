@@ -1,4 +1,5 @@
 const Booking = require('../models/Booking');
+const mongoose = require('mongoose');
 const BookingDetail = require('../models/BookingDetail');
 function nightsBetween(checkIn, checkOut) {
   const msPerDay = 1000 * 60 * 60 * 24;
@@ -6,6 +7,9 @@ function nightsBetween(checkIn, checkOut) {
   const b = new Date(checkOut);
   // làm tròn xuống
   const diff = Math.floor((b - a) / msPerDay);
+  if (diff === 0) {
+    return 1;
+  }
   return diff > 0 ? diff : 0;
 }
 function isOverlapping(aStart, aEnd, bStart, bEnd) {
@@ -27,7 +31,7 @@ async function countBookedRooms(roomTypeId, checkIn, checkOut) {
     {
       $match: {
         bookingId: { $in: bookingIds },
-        roomTypeId: mongoose.Types.ObjectId(roomTypeId)
+        roomTypeId: new mongoose.Types.ObjectId(roomTypeId)
       }
     },
     { $group: { _id: '$roomTypeId', totalBooked: { $sum: '$quantity' } } }

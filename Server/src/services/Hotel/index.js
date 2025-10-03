@@ -290,8 +290,11 @@ const getHotelDetail = async (id, checkIn, checkOut, guests) => {
   if (!checkIn || !checkOut || !guests) {
     return { hotel };
   }
-
+  const ownerInfo = await OwnerInfo.findOne({
+    userId: hotel.userId
+  }).populate('userId', 'fullName');
   const nights = nightsBetween(checkIn, checkOut);
+  const services = await ServiceModel.find({ hotelId: id });
   const roomTypes = await RoomTypeModel.find({
     hotelId: id,
     capacity: { $gte: Number(guests) }
@@ -312,10 +315,15 @@ const getHotelDetail = async (id, checkIn, checkOut, guests) => {
       };
     })
   );
-
+  const minPricePerNight = roomStatuses.reduce((min, rt) => {
+    return rt.pricePerNight < min ? rt.pricePerNight : min;
+  }, Infinity);
   return {
-    hotel,
+    info: hotel,
+    ownerInfo,
+    services,
     nights,
+    minPricePerNight,
     roomTypes: roomStatuses
   };
 };
