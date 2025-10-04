@@ -1,21 +1,37 @@
-const mongoose = require('mongoose');
-const bookingSchema = new mongoose.Schema(
-  {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    checkInDate: { type: Date, required: true },
-    checkOutDate: { type: Date, required: true },
-    totalPrice: { type: Number, required: true },
-    status: {
-      type: String,
-      enum: ['pending', 'confirmed', 'cancelled'],
-      default: 'pending'
-    }
-  },
-  { timestamps: true }
-);
+// const mongoose = require('mongoose');
 
-module.exports = mongoose.model('Booking', bookingSchema);
+// const BookingDetailSchema = new mongoose.Schema(
+//   {
+//     roomTypeId: { type: mongoose.Schema.Types.ObjectId },
+//     serviceId: { type: mongoose.Schema.Types.ObjectId },
+//     quantity: Number,
+//     priceAtBooking: Number
+//   },
+//   { _id: false }
+// );
+// const bookingSchema = new mongoose.Schema(
+//   {
+//     userId: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: 'User',
+//       required: true
+//     },
+//     placeId: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: 'Place',
+//       required: true
+//     },
+//     checkInDate: { type: Date, required: true },
+//     checkOutDate: { type: Date, required: true },
+//     totalPrice: { type: Number, required: true },
+//     status: {
+//       type: String,
+//       enum: ['pending', 'confirmed', 'cancelled'],
+//       default: 'pending'
+//     },
+//     bookingDetails: [BookingDetailSchema]
+//   },
+//   { timestamps: true }
+// );
+
+// module.exports = mongoose.model('Booking', bookingSchema);

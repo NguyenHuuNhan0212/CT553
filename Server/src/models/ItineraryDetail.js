@@ -11,10 +11,6 @@ const itineraryDetailSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Place'
     },
-    hotelId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Hotel'
-    },
     visitDay: { type: String, required: true },
     note: String,
     startTime: String,
@@ -22,15 +18,5 @@ const itineraryDetailSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
-itineraryDetailSchema.pre('validate', function (next) {
-  if (!this.placeId && !this.hotelId) {
-    return next(new Error('Cần chọn Place hoặc Hotel'));
-  }
-  if (this.placeId && this.hotelId) {
-    return next(new Error('Chỉ được chọn 1 trong Place hoặc Hotel'));
-  }
-  next();
-});
 
 module.exports = mongoose.model('ItineraryDetail', itineraryDetailSchema);

@@ -5,15 +5,15 @@ const {
   getPlaceRelativeByTypeAndAddress,
   deletePlace,
   updateStatusActive,
-  updatePlace
+  updatePlace,
+  getAllByUserId
 } = require('../controllers/placeController');
-const { getAllService } = require('../controllers/serviceController');
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middlewares/authMiddleware');
 const upload = require('../middlewares/upload');
 router.post('/', verifyToken, upload.array('images'), addPlace);
-router.get('/my-services', verifyToken, getAllService);
+router.get('/my-services', verifyToken, getAllByUserId);
 router.get('/relative', getPlaceRelativeByTypeAndAddress);
 router.get('/:placeId', getInfoOnePlace);
 router.patch('/update-status-active/:placeId', verifyToken, updateStatusActive);

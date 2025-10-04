@@ -1,6 +1,6 @@
 const {
   addPlaceService,
-  getAllPlaceOffUser,
+  getAllPlaceOfUser,
   getOnePlace,
   getAllPlace,
   getPlaceRelative,
@@ -51,7 +51,15 @@ const getPlaceRelativeByTypeAndAddress = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+const getAllByUserId = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const result = await getAllPlaceOfUser(userId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 const deletePlace = async (req, res) => {
   try {
     const { userId } = req.user;
@@ -108,5 +116,6 @@ module.exports = {
   getPlaceRelativeByTypeAndAddress,
   deletePlace,
   updateStatusActive,
+  getAllByUserId,
   updatePlace
 };
