@@ -6,7 +6,8 @@ const {
   getPlaceRelative,
   removePlace,
   updateActivePlace,
-  updatePlaceService
+  updatePlaceService,
+  getHotelsNearPlace
 } = require('../services/Place');
 
 const addPlace = async (req, res) => {
@@ -58,6 +59,17 @@ const getAllByUserId = async (req, res) => {
     return res.status(200).json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+const getHotelsNear = async (req, res) => {
+  try {
+    const { address } = req.query;
+    const result = await getHotelsNearPlace(address);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
   }
 };
 const deletePlace = async (req, res) => {
@@ -117,5 +129,6 @@ module.exports = {
   deletePlace,
   updateStatusActive,
   getAllByUserId,
-  updatePlace
+  updatePlace,
+  getHotelsNear
 };

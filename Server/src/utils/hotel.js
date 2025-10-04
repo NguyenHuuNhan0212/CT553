@@ -1,42 +1,52 @@
 const Booking = require('../models/Booking');
 const mongoose = require('mongoose');
-const BookingDetail = require('../models/BookingDetail');
+
 function nightsBetween(checkIn, checkOut) {
   const msPerDay = 1000 * 60 * 60 * 24;
-  const a = new Date(checkIn);
-  const b = new Date(checkOut);
-  // làm tròn xuống
-  const diff = Math.floor((b - a) / msPerDay);
-  if (diff === 0) {
-    return 1;
-  }
-  return diff > 0 ? diff : 0;
+  const start = new Date(checkIn).setHours(0, 0, 0, 0);
+  const end = new Date(checkOut).setHours(0, 0, 0, 0);
+  const diff = Math.round((end - start) / msPerDay);
+  return diff <= 0 ? 1 : diff;
 }
+
 function isOverlapping(aStart, aEnd, bStart, bEnd) {
-  return new Date(aStart) < new Date(bEnd) && new Date(bStart) < new Date(aEnd);
+  const aS = new Date(aStart),
+    aE = new Date(aEnd),
+    bS = new Date(bStart),
+    bE = new Date(bEnd);
+  return aS < bE && bS < aE;
 }
 
 async function countBookedRooms(roomTypeId, checkIn, checkOut) {
-  const overlappingBookings = await Booking.find({
-    checkInDate: { $lt: new Date(checkOut) },
-    checkOutDate: { $gt: new Date(checkIn) },
-    status: { $ne: 'cancelled' }
-  }).select('_id');
+  if (!roomTypeId) {
+    console.error(' roomTypeId bị thiếu:', roomTypeId);
+    return 0;
+  }
+  const roomTypeObjId = new mongoose.Types.ObjectId(roomTypeId);
 
-  if (!overlappingBookings.length) return 0;
-
-  const bookingIds = overlappingBookings.map((b) => b._id);
-
-  const agg = await BookingDetail.aggregate([
+  const bookings = await Booking.aggregate([
     {
       $match: {
-        bookingId: { $in: bookingIds },
-        roomTypeId: new mongoose.Types.ObjectId(roomTypeId)
+        checkInDate: { $lt: new Date(checkOut) },
+        checkOutDate: { $gt: new Date(checkIn) },
+        status: { $ne: 'cancelled' }
       }
     },
-    { $group: { _id: '$roomTypeId', totalBooked: { $sum: '$quantity' } } }
+    { $unwind: '$bookingDetails' },
+    {
+      $match: {
+        'bookingDetails.roomTypeId': roomTypeObjId
+      }
+    },
+    {
+      $group: {
+        _id: '$bookingDetails.roomTypeId',
+        totalBooked: { $sum: '$bookingDetails.quantity' }
+      }
+    }
   ]);
 
-  return agg[0] && agg[0].totalBooked ? agg[0].totalBooked : 0;
+  return bookings[0]?.totalBooked || 0;
 }
+
 module.exports = { nightsBetween, isOverlapping, countBookedRooms };

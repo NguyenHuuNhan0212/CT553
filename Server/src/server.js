@@ -8,7 +8,6 @@ const authRoute = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const tripPlanRoutes = require('./routes/tripPlanRoutes');
 const placeRoutes = require('./routes/placeRoutes');
-// const hotelRoutes = require('./routes/hotelRoutes');
 // const bookingRoutes = require('./routes/bookingRoutes');
 dotenv.config();
 
@@ -27,7 +26,6 @@ app.use('/api/auth', authRoute);
 app.use('/api/trip-plans', tripPlanRoutes);
 app.use('/api', userRoutes);
 app.use('/api/places', placeRoutes);
-// app.use('/api/hotels', hotelRoutes);
 // app.use('/api/bookings', bookingRoutes);
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Backend listening on ${PORT}`));

@@ -73,7 +73,11 @@ const getOnePlace = async (placeId) => {
 };
 
 const getAllPlace = async () => {
-  return await PlaceModel.find({ deleted: false, isApprove: true }).sort({
+  return await PlaceModel.find({
+    isActive: true,
+    deleted: false,
+    isApprove: true
+  }).sort({
     createdAt: -1
   });
 };
@@ -84,9 +88,21 @@ const getPlaceRelative = async (id, type, address) => {
     address: { $regex: address, $options: 'i' },
     _id: { $ne: id },
     deleted: false,
+    isActive: true,
     isApprove: true
   });
   return { places };
+};
+
+const getHotelsNearPlace = async (address) => {
+  const hotels = await PlaceModel.find({
+    type: 'hotel',
+    address: address,
+    deleted: false,
+    isActive: true,
+    isApprove: true
+  });
+  return { hotels };
 };
 
 const getAllPlaceOfUser = async (userId) => {
@@ -103,7 +119,7 @@ const removePlace = async (userId, placeId) => {
 };
 
 // ✅ Toggle active
-const updateActivePlace = async (userId, placeId) => {
+const updateActivePlace = async (placeId) => {
   const place = await PlaceModel.findById(placeId);
   if (!place) throw new Error('Địa điểm không tồn tại');
 
@@ -130,7 +146,9 @@ const updatePlaceService = async (placeId, userId, data) => {
   place.address = address || place.address;
   place.description = description || place.description;
   if (images && images.length > 0) place.images = images;
-
+  if (type !== 'hotel') {
+    place.hotelDetail = null;
+  }
   let placeHotelDetailParsed = null;
   if (type === 'hotel') {
     if (hotelDetail) {
@@ -167,5 +185,6 @@ module.exports = {
   getAllPlaceOfUser,
   removePlace,
   updateActivePlace,
-  updatePlaceService
+  updatePlaceService,
+  getHotelsNearPlace
 };
