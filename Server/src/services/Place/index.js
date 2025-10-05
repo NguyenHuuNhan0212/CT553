@@ -67,6 +67,7 @@ const getOnePlace = async (placeId) => {
     ownerInfo,
     services: place.services,
     hotelDetail: place.hotelDetail,
+    roomTypes: place.hotelDetail?.roomTypes || [],
     minPricePerNight,
     message: 'Lấy thông tin địa điểm thành công'
   };
@@ -153,7 +154,7 @@ const updatePlaceService = async (placeId, userId, data) => {
   if (type === 'hotel') {
     if (hotelDetail) {
       try {
-        placeHotelDetailParsed = JSON.parse(hotelDetail); // parse lại JSON từ string
+        placeHotelDetailParsed = JSON.parse(hotelDetail);
       } catch (err) {
         console.error('Parse hotelDetail error:', err);
       }

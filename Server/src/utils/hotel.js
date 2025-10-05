@@ -2,34 +2,45 @@ const Booking = require('../models/Booking');
 const mongoose = require('mongoose');
 
 function nightsBetween(checkIn, checkOut) {
+  const start = new Date(checkIn);
+  const end = new Date(checkOut);
+
+  const startUTC = Date.UTC(
+    start.getFullYear(),
+    start.getMonth(),
+    start.getDate()
+  );
+  const endUTC = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+
   const msPerDay = 1000 * 60 * 60 * 24;
-  const start = new Date(checkIn).setHours(0, 0, 0, 0);
-  const end = new Date(checkOut).setHours(0, 0, 0, 0);
-  const diff = Math.round((end - start) / msPerDay);
-  return diff <= 0 ? 1 : diff;
+  const diffDays = Math.round((endUTC - startUTC) / msPerDay) + 1;
+  return diffDays <= 0 ? 1 : diffDays;
 }
 
 function isOverlapping(aStart, aEnd, bStart, bEnd) {
-  const aS = new Date(aStart),
-    aE = new Date(aEnd),
-    bS = new Date(bStart),
-    bE = new Date(bEnd);
-  return aS < bE && bS < aE;
+  const aS = new Date(aStart);
+  const aE = new Date(aEnd);
+  const bS = new Date(bStart);
+  const bE = new Date(bEnd);
+  return aS <= bE && bS <= aE;
 }
 
-async function countBookedRooms(roomTypeId, checkIn, checkOut) {
+async function countBookedRooms(placeId, roomTypeId, checkIn, checkOut) {
   if (!roomTypeId) {
-    console.error(' roomTypeId bị thiếu:', roomTypeId);
+    console.error('❌ Thiếu roomTypeId:', roomTypeId);
     return 0;
   }
+
+  const placeObjId = new mongoose.Types.ObjectId(placeId);
   const roomTypeObjId = new mongoose.Types.ObjectId(roomTypeId);
 
   const bookings = await Booking.aggregate([
     {
       $match: {
+        placeId: placeObjId,
+        status: { $ne: 'cancelled' },
         checkInDate: { $lt: new Date(checkOut) },
-        checkOutDate: { $gt: new Date(checkIn) },
-        status: { $ne: 'cancelled' }
+        checkOutDate: { $gt: new Date(checkIn) }
       }
     },
     { $unwind: '$bookingDetails' },

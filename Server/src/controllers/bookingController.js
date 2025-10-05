@@ -1,4 +1,8 @@
-const { createBooking, getBookings } = require('../services/Booking');
+const {
+  createBooking,
+  getBookings,
+  getBookingDetail
+} = require('../services/Booking');
 
 const createBookingController = async (req, res) => {
   try {
@@ -19,4 +23,18 @@ const getBookingsController = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-module.exports = { createBookingController, getBookingsController };
+const getBookingById = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { bookingId } = req.params;
+    const result = await getBookingDetail(userId, bookingId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+module.exports = {
+  createBookingController,
+  getBookingsController,
+  getBookingById
+};

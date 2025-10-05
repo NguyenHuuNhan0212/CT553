@@ -1,126 +1,160 @@
-// const BookingModel = require('../../models/Booking');
-// const BookingDetailModel = require('../../models/BookingDetail');
-// const RoomTypeModel = require('../../models/RoomType');
-// const ServiceModel = require('../../models/Service');
-// const { nightsBetween, countBookedRooms } = require('../../utils/hotel');
+const BookingModel = require('../../models/Booking');
+const PlaceModel = require('../../models/Place');
+const { nightsBetween, countBookedRooms } = require('../../utils/hotel');
 
-// const createBooking = async (userId, data) => {
-//   console.log(data);
-//   const { checkInDate, checkOutDate, details } = data;
-//   const nights = nightsBetween(checkInDate, checkOutDate);
-//   if (nights < 0) {
-//     throw new Error('Ngày check-out phải sau ngày check-in');
-//   }
-//   if (!details || details.length === 0) {
-//     throw new Error('Chưa chọn phòng/dịch vụ.');
-//   }
-//   const providerSet = new Set();
-//   let totalPrice = 0;
-//   for (const d of details) {
-//     if (d?.serviceId) {
-//       const service = await ServiceModel.findById(d.serviceId).lean();
-//       if (!service) throw new Error('Dịch vụ không tồn tại.');
-//       // check de them service cua place cu the
-//       if (service.placeId) {
-//         providerSet.add(String(service.placeId));
-//       } else if (service.hotelId) {
-//         providerSet.add(String(service.hotelId));
-//       }
+const createBooking = async (userId, data) => {
+  const { placeId, checkInDate, checkOutDate, details } = data;
+  if (!placeId) throw new Error('Thiếu thông tin địa điểm.');
+  if (!details || details.length === 0)
+    throw new Error('Chưa chọn phòng hoặc dịch vụ.');
 
-//       totalPrice += service.price * d.quantity;
-//     } else {
-//       const roomType = await RoomTypeModel.findById(d.roomTypeId).lean();
-//       if (!roomType) throw new Error('Phòng không tồn tại.');
+  const checkIn = new Date(checkInDate);
+  checkIn.setHours(0, 0, 0, 0);
 
-//       providerSet.add(String(roomType.hotelId));
+  const checkOut = new Date(checkOutDate);
+  checkOut.setHours(23, 59, 59, 999);
+  const nights = nightsBetween(checkIn, checkOut);
+  if (nights <= 0) throw new Error('Ngày check-out phải sau ngày check-in.');
+  const place = await PlaceModel.findById(placeId).lean();
+  if (!place) throw new Error('Không tìm thấy địa điểm.');
 
-//       // Check số lượng phòng còn trống
-//       const booked = await countBookedRooms(
-//         roomType._id,
-//         checkInDate,
-//         checkOutDate
-//       );
-//       const available = roomType.totalRooms - booked;
-//       if (available < d.quantity) {
-//         throw new Error(`Phòng không đủ. Chỉ còn ${available}`);
-//       }
+  const bookingDetails = [];
+  let totalPrice = 0;
+  for (const d of details) {
+    // 📌 Dịch vụ
+    if (d.serviceId) {
+      const service = place.services.find(
+        (s) => String(s._id) === String(d.serviceId)
+      );
+      if (!service) throw new Error('Dịch vụ không tồn tại trong địa điểm.');
 
-//       totalPrice += roomType.pricePerNight * nights * d.quantity;
-//     }
-//   }
-//   if (providerSet.size > 1) {
-//     throw new Error('Chỉ được đặt của 1 nhà cung cấp.');
-//   }
-//   const booking = await BookingModel.create({
-//     userId,
-//     checkInDate,
-//     checkOutDate,
-//     totalPrice,
-//     status: 'pending'
-//   });
-//   for (const d of details) {
-//     await BookingDetailModel.create({
-//       bookingId: booking._id,
-//       roomTypeId: d.roomTypeId || null,
-//       serviceId: d.serviceId || null,
-//       quantity: d.quantity,
-//       priceAtBooking: d.roomTypeId
-//         ? (
-//             await RoomTypeModel.findById(d.roomTypeId)
-//           ).pricePerNight
-//         : (
-//             await ServiceModel.findById(d.serviceId)
-//           ).price
-//     });
-//   }
-//   return {
-//     booking,
-//     message: 'Đặt dịch vụ thành công'
-//   };
-// };
-// const getBookings = async (userId) => {
-//   const bookings = await BookingModel.find({ userId }).sort({ createdAt: -1 });
+      bookingDetails.push({
+        serviceId: service._id,
+        quantity: d.quantity || 1,
+        priceAtBooking: service.price
+      });
 
-//   if (!bookings.length) return [];
+      totalPrice += service.price * (d.quantity || 1);
+    }
 
-//   const result = await Promise.all(
-//     bookings.map(async (b) => {
-//       const bookingDetail = await BookingDetailModel.findOne({
-//         bookingId: b._id
-//       });
+    // 📌 Loại phòng
+    if (d.roomTypeId) {
+      const roomType = place.hotelDetail?.roomTypes.find(
+        (r) => String(r._id) === String(d.roomTypeId)
+      );
+      if (!roomType)
+        throw new Error('Loại phòng không tồn tại trong khách sạn này.');
 
-//       let placeName = null;
-//       let serviceName = null;
-//       if (bookingDetail?.roomTypeId) {
-//         const roomType = await RoomTypeModel.findById(
-//           bookingDetail.roomTypeId
-//         ).populate('hotelId', 'name');
-//         serviceName = 'Dịch vụ lưu trú';
-//         placeName = roomType?.hotelId?.name || null;
-//       } else if (bookingDetail?.serviceId) {
-//         const service = await ServiceModel.findById(bookingDetail.serviceId);
-//         serviceName = service?.name || null;
-//         if (service?.placeId) {
-//           const checkPlaceId = await ServiceModel.findById(
-//             bookingDetail.serviceId
-//           ).populate('placeId', 'name');
-//           placeName = checkPlaceId?.placeId?.name || null;
-//         } else if (service?.hotelId) {
-//           const checkHotelId = await ServiceModel.findById(
-//             bookingDetail.serviceId
-//           ).populate('hotelId', 'name');
-//           placeName = checkHotelId?.hotelId?.name || null;
-//         }
-//       }
-//       return {
-//         ...b.toObject(),
-//         placeName,
-//         serviceName
-//       };
-//     })
-//   );
+      const booked = await countBookedRooms(
+        placeId,
+        roomType._id,
+        checkIn,
+        checkOut
+      );
+      const available = roomType.totalRooms - booked;
 
-//   return result;
-// };
+      if (available <= 0) {
+        throw new Error(`Phòng loại "${roomType.name}" đã hết.`);
+      }
+      if (available < (d.quantity || 1)) {
+        throw new Error(
+          `Không đủ phòng loại "${roomType.name}". Chỉ còn ${available}.`
+        );
+      }
 
-// module.exports = { createBooking, getBookings };
+      bookingDetails.push({
+        roomTypeId: roomType._id,
+        quantity: d.quantity || 1,
+        priceAtBooking: roomType.pricePerNight
+      });
+
+      totalPrice += roomType.pricePerNight * nights * (d.quantity || 1);
+    }
+  }
+
+  const booking = await BookingModel.create({
+    userId,
+    placeId,
+    checkInDate: checkIn,
+    checkOutDate: checkOut,
+    totalPrice,
+    status: 'pending',
+    bookingDetails
+  });
+
+  return { booking, message: 'Đặt chỗ thành công.' };
+};
+
+const getBookings = async (userId) => {
+  const bookings = await BookingModel.find({ userId })
+    .populate('placeId', 'name type address')
+    .sort({ createdAt: -1 });
+
+  return bookings.map((b) => {
+    const placeName = b.placeId?.name || 'Không xác định';
+    const placeType = b.placeId?.type;
+    const serviceName =
+      placeType === 'hotel'
+        ? 'Đặt phòng khách sạn'
+        : placeType === 'restaurant'
+        ? 'Đặt dịch vụ ăn uống'
+        : 'Đặt dịch vụ';
+
+    return { ...b.toObject(), placeName, serviceName };
+  });
+};
+
+const getBookingDetail = async (userId, bookingId) => {
+  const booking = await BookingModel.findOne({ _id: bookingId, userId })
+    .populate('userId', 'name email')
+    .populate('placeId', 'name type address hotelDetail services')
+    .lean();
+  if (!booking) {
+    throw new Error('Không tìm thấy booking');
+  }
+  const place = booking.placeId;
+
+  const bookingDetails = booking.bookingDetails.map((detail) => {
+    let roomTypeName = null;
+    let serviceName = null;
+
+    if (detail.roomTypeId) {
+      const roomType = place.hotelDetail?.roomTypes.find(
+        (r) => r._id.toString() === detail.roomTypeId.toString()
+      );
+      if (roomType) {
+        roomTypeName = roomType.name;
+      }
+    }
+    if (detail.serviceId) {
+      const service = place.services.find(
+        (s) => s._id.toString() === detail.serviceId.toString()
+      );
+      if (service) {
+        serviceName = service.name;
+      }
+    }
+    return {
+      ...detail,
+      serviceName,
+      roomTypeName
+    };
+  });
+  const result = {
+    bookingId,
+    user: booking.userId,
+    place: {
+      _id: place._id,
+      name: place.name,
+      type: place.type,
+      address: place.address
+    },
+    checkInDate: booking.checkInDate,
+    checkOutDate: booking.checkOutDate,
+    totalPrice: booking.totalPrice,
+    status: booking.status,
+    bookingDetails
+  };
+  return result;
+};
+module.exports = { createBooking, getBookings, getBookingDetail };

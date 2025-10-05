@@ -26,7 +26,12 @@ const searchHotels = async (location, checkIn, checkOut, guests) => {
       }
       const availables = await Promise.all(
         filteredRoomTypes.map(async (rt) => {
-          const booked = await countBookedRooms(rt._id, checkIn, checkOut);
+          const booked = await countBookedRooms(
+            hotel._id,
+            rt._id,
+            checkIn,
+            checkOut
+          );
           const available = (rt.totalRooms || 0) - booked;
           return { ...rt, available };
         })
