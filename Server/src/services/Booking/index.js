@@ -77,7 +77,7 @@ const createBooking = async (userId, data) => {
     placeId,
     checkInDate: checkIn,
     checkOutDate: checkOut,
-    totalPrice,
+    totalPrice: totalPrice,
     status: 'pending',
     bookingDetails
   });
@@ -95,10 +95,12 @@ const getBookings = async (userId) => {
     const placeType = b.placeId?.type;
     const serviceName =
       placeType === 'hotel'
-        ? 'Đặt phòng khách sạn'
+        ? 'Khách sạn, nhà nghĩ'
         : placeType === 'restaurant'
-        ? 'Đặt dịch vụ ăn uống'
-        : 'Đặt dịch vụ';
+        ? 'Nhà hàng, quán ăn'
+        : placeType === 'cafe'
+        ? 'Quán cafe'
+        : 'Địa điểm du lịch';
 
     return { ...b.toObject(), placeName, serviceName };
   });
@@ -156,5 +158,15 @@ const getBookingDetail = async (userId, bookingId) => {
     bookingDetails
   };
   return result;
+};
+
+const deleteBooking = async (userId, bookingId) => {
+  const booking = await BookingModel.findOne({ _id: bookingId, userId });
+  if (!booking) {
+    throw new Error('Đơn đặt không tồn tại.');
+  }
+  if (booking.status === 'pending') {
+    throw new Error('Đơn đặt đang trong giai đoạn ');
+  }
 };
 module.exports = { createBooking, getBookings, getBookingDetail };

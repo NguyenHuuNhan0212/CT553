@@ -16,7 +16,7 @@ const paymentSchema = new mongoose.Schema(
     },
     method: { type: String, enum: ['offline', 'online'], required: true },
     paymentType: { type: String, enum: ['deposit', 'full'] },
-    paymentDate: { type: Date, required: true }
+    paymentDate: { type: Date }
   },
   { timestamps: true }
 );
