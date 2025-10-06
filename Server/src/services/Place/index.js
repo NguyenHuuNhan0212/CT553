@@ -120,8 +120,8 @@ const removePlace = async (userId, placeId) => {
 };
 
 // ✅ Toggle active
-const updateActivePlace = async (placeId) => {
-  const place = await PlaceModel.findById(placeId);
+const updateActivePlace = async (userId, placeId) => {
+  const place = await PlaceModel.findOne({ _id: placeId, userId });
   if (!place) throw new Error('Địa điểm không tồn tại');
 
   place.isActive = !place.isActive;

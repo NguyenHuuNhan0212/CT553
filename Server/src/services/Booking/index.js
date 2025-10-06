@@ -1,5 +1,6 @@
 const BookingModel = require('../../models/Booking');
 const PlaceModel = require('../../models/Place');
+const PaymentModel = require('../../models/Payment');
 const { nightsBetween, countBookedRooms } = require('../../utils/hotel');
 
 const createBooking = async (userId, data) => {
@@ -114,6 +115,7 @@ const getBookingDetail = async (userId, bookingId) => {
   if (!booking) {
     throw new Error('Không tìm thấy booking');
   }
+  const payment = await PaymentModel.findOne({ bookingId });
   const place = booking.placeId;
 
   const bookingDetails = booking.bookingDetails.map((detail) => {
@@ -143,6 +145,7 @@ const getBookingDetail = async (userId, bookingId) => {
     };
   });
   const result = {
+    payment,
     bookingId,
     user: booking.userId,
     place: {
@@ -161,12 +164,23 @@ const getBookingDetail = async (userId, bookingId) => {
 };
 
 const deleteBooking = async (userId, bookingId) => {
-  const booking = await BookingModel.findOne({ _id: bookingId, userId });
+  const booking = await BookingModel.findOne({
+    _id: bookingId,
+    userId,
+    status: 'cancelled'
+  });
   if (!booking) {
-    throw new Error('Đơn đặt không tồn tại.');
-  }
-  if (booking.status === 'pending') {
-    throw new Error('Đơn đặt đang trong giai đoạn ');
+    throw new Error('Đơn đặt không tồn tại hoặc không được phép xóa.');
+  } else {
+    await BookingModel.findByIdAndDelete(bookingId);
+    return {
+      message: 'Xóa booking thành công.'
+    };
   }
 };
-module.exports = { createBooking, getBookings, getBookingDetail };
+module.exports = {
+  createBooking,
+  getBookings,
+  getBookingDetail,
+  deleteBooking
+};
