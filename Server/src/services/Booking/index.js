@@ -2,13 +2,13 @@ const BookingModel = require('../../models/Booking');
 const PlaceModel = require('../../models/Place');
 const PaymentModel = require('../../models/Payment');
 const { nightsBetween, countBookedRooms } = require('../../utils/hotel');
+const { isWithin1Hour } = require('../../utils/booking');
 
 const createBooking = async (userId, data) => {
   const { placeId, checkInDate, checkOutDate, details } = data;
   if (!placeId) throw new Error('Thiếu thông tin địa điểm.');
   if (!details || details.length === 0)
     throw new Error('Chưa chọn phòng hoặc dịch vụ.');
-
   const checkIn = new Date(checkInDate);
   checkIn.setHours(0, 0, 0, 0);
 
@@ -38,7 +38,6 @@ const createBooking = async (userId, data) => {
       totalPrice += service.price * (d.quantity || 1);
     }
 
-    // 📌 Loại phòng
     if (d.roomTypeId) {
       const roomType = place.hotelDetail?.roomTypes.find(
         (r) => String(r._id) === String(d.roomTypeId)
@@ -170,11 +169,46 @@ const deleteBooking = async (userId, bookingId) => {
     status: 'cancelled'
   });
   if (!booking) {
-    throw new Error('Đơn đặt không tồn tại hoặc không được phép xóa.');
+    throw new Error('Không được phép xóa đơn đặt ở trạng thái này.');
   } else {
     await BookingModel.findByIdAndDelete(bookingId);
+    await PaymentModel.findOneAndDelete({ bookingId });
     return {
       message: 'Xóa booking thành công.'
+    };
+  }
+};
+
+const handleCancelBooking = async (userId, bookingId) => {
+  const booking = await BookingModel.findOne({ userId, _id: bookingId }).lean();
+  if (!booking) {
+    throw new Error('Booking not found');
+  } else {
+    const payment = await PaymentModel.findOne({ bookingId });
+    const isValidOffline =
+      booking.status === 'confirmed' &&
+      payment.status === 'pending' &&
+      payment.method === 'offline';
+    if (isValidOffline) {
+      await BookingModel.findByIdAndUpdate(booking._id, {
+        status: 'cancelled'
+      });
+      await PaymentModel.findOneAndDelete({ bookingId });
+    } else if (!isValidOffline && isWithin1Hour(booking.createdAt)) {
+      await BookingModel.findByIdAndUpdate(booking._id, {
+        status: 'cancelled'
+      });
+      await PaymentModel.findOneAndUpdate(
+        { bookingId },
+        { status: 'refunded' }
+      );
+    } else {
+      await BookingModel.findByIdAndUpdate(booking._id, {
+        status: 'cancelled'
+      });
+    }
+    return {
+      message: 'handel cancel booking'
     };
   }
 };
@@ -182,5 +216,6 @@ module.exports = {
   createBooking,
   getBookings,
   getBookingDetail,
-  deleteBooking
+  deleteBooking,
+  handleCancelBooking
 };
