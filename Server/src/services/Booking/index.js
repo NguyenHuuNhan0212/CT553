@@ -31,6 +31,7 @@ const createBooking = async (userId, data) => {
 
       bookingDetails.push({
         serviceId: service._id,
+        serviceName: service.name,
         quantity: d.quantity || 1,
         priceAtBooking: service.price
       });
@@ -64,6 +65,7 @@ const createBooking = async (userId, data) => {
 
       bookingDetails.push({
         roomTypeId: roomType._id,
+        roomTypeName: roomType.name,
         quantity: d.quantity || 1,
         priceAtBooking: roomType.pricePerNight
       });
@@ -212,10 +214,49 @@ const handleCancelBooking = async (userId, bookingId) => {
     };
   }
 };
+
+const getServiceBookingForPlace = async (userId) => {
+  const places = await PlaceModel.find({ userId }).lean();
+  let bookings = [];
+
+  if (!places.length) {
+    return { bookings };
+  } else {
+    const placeIds = places.map((p) => p._id);
+
+    bookings = await BookingModel.find({ placeId: { $in: placeIds } })
+      .populate('placeId', 'name')
+      .populate('userId', 'fullName')
+      .lean()
+      .sort({ createdAt: -1 });
+
+    const bookingIds = bookings.map((b) => b._id);
+    const payments = await PaymentModel.find({
+      bookingId: { $in: bookingIds }
+    }).lean();
+
+    const paymentMap = new Map(payments.map((p) => [String(p.bookingId), p]));
+
+    const bookingsWithPayment = bookings.map((b) => {
+      const p = paymentMap.get(String(b._id));
+      return {
+        ...b,
+        paymentStatus: p ? p.status : 'chưa thanh toán',
+        paymentMethod: p ? p.method : 'N/A'
+      };
+    });
+
+    return {
+      bookings: bookingsWithPayment
+    };
+  }
+};
+
 module.exports = {
   createBooking,
   getBookings,
   getBookingDetail,
   deleteBooking,
-  handleCancelBooking
+  handleCancelBooking,
+  getServiceBookingForPlace
 };

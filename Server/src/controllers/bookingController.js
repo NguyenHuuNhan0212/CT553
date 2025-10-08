@@ -3,7 +3,8 @@ const {
   getBookings,
   getBookingDetail,
   deleteBooking,
-  handleCancelBooking
+  handleCancelBooking,
+  getServiceBookingForPlace
 } = require('../services/Booking');
 
 const createBookingController = async (req, res) => {
@@ -56,10 +57,20 @@ const cancelBooking = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+const getServiceBookingsBySupplierId = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const result = await getServiceBookingForPlace(userId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   createBookingController,
   getBookingsController,
   getBookingById,
   deletedBooking,
-  cancelBooking
+  cancelBooking,
+  getServiceBookingsBySupplierId
 };

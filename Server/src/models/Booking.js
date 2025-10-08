@@ -4,6 +4,8 @@ const BookingDetailSchema = new mongoose.Schema(
   {
     roomTypeId: { type: mongoose.Schema.Types.ObjectId },
     serviceId: { type: mongoose.Schema.Types.ObjectId },
+    serviceName: String,
+    roomTypeName: String,
     quantity: Number,
     priceAtBooking: Number
   },
