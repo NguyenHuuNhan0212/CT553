@@ -9,8 +9,8 @@ function prepareAIInput(places, hotels, numDays) {
           id: p._id,
           name: p.name,
           address: p.address,
-          avgPrice: p.avgPrice,
-          description: p.description
+          description: p.description,
+          services: p.services
         })),
       cafe: places
         .filter((p) => p.type === 'cafe')
@@ -18,8 +18,8 @@ function prepareAIInput(places, hotels, numDays) {
           id: p._id,
           name: p.name,
           address: p.address,
-          avgPrice: p.avgPrice,
-          description: p.description
+          description: p.description,
+          services: p.services
         })),
       restaurant: places
         .filter((p) => p.type === 'restaurant')
@@ -27,15 +27,15 @@ function prepareAIInput(places, hotels, numDays) {
           id: p._id,
           name: p.name,
           address: p.address,
-          avgPrice: p.avgPrice,
-          description: p.description
+          description: p.description,
+          services: p.services
         })),
       hotel: hotels.map((h) => ({
         id: h._id,
         name: h.name,
         address: h.address,
-        avgPrice: h.avgPrice,
-        description: h.description
+        description: h.description,
+        services: h.services
       }))
     }
   };

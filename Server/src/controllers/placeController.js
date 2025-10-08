@@ -7,7 +7,8 @@ const {
   removePlace,
   updateActivePlace,
   updatePlaceService,
-  getHotelsNearPlace
+  getHotelsNearPlace,
+  getPlacesByAddress
 } = require('../services/Place');
 
 const addPlace = async (req, res) => {
@@ -46,7 +47,13 @@ const getAll = async (req, res) => {
 const getPlaceRelativeByTypeAndAddress = async (req, res) => {
   try {
     const { id, type, address } = req.query;
-    const result = await getPlaceRelative(id, type, address);
+    let result = null;
+    if (!id && !type && address) {
+      result = await getPlacesByAddress(address);
+    } else {
+      result = await getPlaceRelative(id, type, address);
+    }
+
     return res.status(200).json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -121,6 +128,7 @@ const updatePlace = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+
 module.exports = {
   addPlace,
   getInfoOnePlace,

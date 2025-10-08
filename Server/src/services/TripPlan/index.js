@@ -4,7 +4,7 @@ const { generateTripPlanWithAI } = require('./aiClientToGenerateTripPlan');
 
 async function generateTripPlan(city, numDays) {
   const places = await Place.find({
-    address: { $regex: cityToUse, $options: 'i' }
+    address: { $regex: city, $options: 'i' }
   });
 
   if (!places || places.length === 0) {
