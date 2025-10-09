@@ -10,7 +10,7 @@ const createPaymentOffline = async (bookingId) => {
     const booking = await BookingModel.findById(bookingId);
     await PaymentModel.create({
       bookingId,
-      amount: booking.totalPrice,
+      amount: 0,
       method: 'offline',
       paymentType: 'full'
     });

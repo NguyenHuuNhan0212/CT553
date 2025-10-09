@@ -5,7 +5,8 @@ const {
   deleteBookingForUser,
   handleCancelBooking,
   getServiceBookingForPlace,
-  handleDeleteForSupplier
+  handleDeleteForSupplier,
+  handleConfirmPayment
 } = require('../services/Booking');
 
 const createBookingController = async (req, res) => {
@@ -75,6 +76,21 @@ const getServiceBookingsBySupplierId = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const confirmPayment = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const { bookingId } = req.params;
+    if (role !== 'provider') {
+      return res.status(401).json({ message: 'Không có quyền' });
+    } else {
+      const result = await handleConfirmPayment(bookingId);
+      return res.status(200).json(result);
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   createBookingController,
   getBookingsController,
@@ -82,5 +98,6 @@ module.exports = {
   deletedBooking,
   cancelBooking,
   getServiceBookingsBySupplierId,
-  deleteBookingForSupplier
+  deleteBookingForSupplier,
+  confirmPayment
 };

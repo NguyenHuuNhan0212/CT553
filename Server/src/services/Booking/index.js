@@ -273,6 +273,22 @@ const handleDeleteForSupplier = async (bookingId) => {
     }
   }
 };
+
+const handleConfirmPayment = async (bookingId) => {
+  const booking = await BookingModel.findById(bookingId);
+  if (!booking) {
+    throw new Error('Booking not found');
+  } else {
+    await BookingModel.findByIdAndUpdate(bookingId, { status: 'confirmed' });
+    await PaymentModel.findOneAndUpdate(
+      { bookingId },
+      { status: 'success', paymentType: 'full', amount: booking.totalPrice }
+    );
+    return {
+      message: 'Xác nhận thanh toán thành công'
+    };
+  }
+};
 module.exports = {
   createBooking,
   getBookings,
@@ -280,5 +296,6 @@ module.exports = {
   deleteBookingForUser,
   handleCancelBooking,
   getServiceBookingForPlace,
-  handleDeleteForSupplier
+  handleDeleteForSupplier,
+  handleConfirmPayment
 };

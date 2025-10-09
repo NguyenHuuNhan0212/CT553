@@ -1,3 +1,4 @@
+const { default: mongoose } = require('mongoose');
 const PlaceModel = require('../../models/Place');
 const OwnerInfo = require('../../models/Supplier');
 const { nightsBetween, countBookedRooms } = require('../../utils/hotel');
@@ -81,10 +82,14 @@ const getHotelDetail = async (id, checkIn, checkOut, guests) => {
   const filteredRoomTypes = roomTypes.filter(
     (rt) => rt.capacity >= Number(guests)
   );
-
   const roomStatuses = await Promise.all(
     filteredRoomTypes.map(async (rt) => {
-      const booked = await countBookedRooms(rt._id, checkIn, checkOut);
+      const booked = await countBookedRooms(
+        hotel._id,
+        rt._id,
+        checkIn,
+        checkOut
+      );
       const available = (rt.totalRooms || 0) - booked;
       return {
         roomTypeId: rt._id,
