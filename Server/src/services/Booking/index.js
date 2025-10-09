@@ -88,7 +88,7 @@ const createBooking = async (userId, data) => {
 };
 
 const getBookings = async (userId) => {
-  const bookings = await BookingModel.find({ userId })
+  const bookings = await BookingModel.find({ userId, isDeleted: false })
     .populate('placeId', 'name type address')
     .sort({ createdAt: -1 });
 
@@ -109,7 +109,10 @@ const getBookings = async (userId) => {
 };
 
 const getBookingDetail = async (userId, bookingId) => {
-  const booking = await BookingModel.findOne({ _id: bookingId, userId })
+  const booking = await BookingModel.findOne({
+    _id: bookingId,
+    userId
+  })
     .populate('userId', 'name email')
     .populate('placeId', 'name type address hotelDetail services')
     .lean();
@@ -164,7 +167,7 @@ const getBookingDetail = async (userId, bookingId) => {
   return result;
 };
 
-const deleteBooking = async (userId, bookingId) => {
+const deleteBookingForUser = async (userId, bookingId) => {
   const booking = await BookingModel.findOne({
     _id: bookingId,
     userId,
@@ -173,8 +176,7 @@ const deleteBooking = async (userId, bookingId) => {
   if (!booking) {
     throw new Error('Không được phép xóa đơn đặt ở trạng thái này.');
   } else {
-    await BookingModel.findByIdAndDelete(bookingId);
-    await PaymentModel.findOneAndDelete({ bookingId });
+    await BookingModel.findByIdAndUpdate(bookingId, { isDeleted: true });
     return {
       message: 'Xóa booking thành công.'
     };
@@ -226,7 +228,7 @@ const getServiceBookingForPlace = async (userId) => {
 
     bookings = await BookingModel.find({ placeId: { $in: placeIds } })
       .populate('placeId', 'name')
-      .populate('userId', 'fullName')
+      .populate('userId', 'fullName email phone')
       .lean()
       .sort({ createdAt: -1 });
 
@@ -241,6 +243,7 @@ const getServiceBookingForPlace = async (userId) => {
       const p = paymentMap.get(String(b._id));
       return {
         ...b,
+        paymentAmount: p ? p.amount : 0,
         paymentStatus: p ? p.status : 'chưa thanh toán',
         paymentMethod: p ? p.method : 'N/A'
       };
@@ -252,11 +255,30 @@ const getServiceBookingForPlace = async (userId) => {
   }
 };
 
+const handleDeleteForSupplier = async (bookingId) => {
+  {
+    const booking = await BookingModel.findOne({
+      _id: bookingId,
+      status: 'cancelled',
+      isDeleted: true
+    });
+    if (!booking) {
+      throw new Error('Không được phép xóa đơn đặt ở trạng thái này.');
+    } else {
+      await BookingModel.findByIdAndDelete(bookingId);
+      await PaymentModel.findOneAndDelete({ bookingId });
+      return {
+        message: 'Xóa booking thành công.'
+      };
+    }
+  }
+};
 module.exports = {
   createBooking,
   getBookings,
   getBookingDetail,
-  deleteBooking,
+  deleteBookingForUser,
   handleCancelBooking,
-  getServiceBookingForPlace
+  getServiceBookingForPlace,
+  handleDeleteForSupplier
 };

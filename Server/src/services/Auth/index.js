@@ -10,7 +10,7 @@ const {
   generateToken
 } = require('../../utils/generateToken.js');
 const register = async (data) => {
-  if (data.email && data.password && data.fullName) {
+  if (data.email && data.password && data.fullName && data.phone) {
     const existingUser = await UserModel.findOne({ email: data.email });
     if (existingUser) {
       throw new Error('Email đã đăng ký tài khoản.');
@@ -25,10 +25,13 @@ const register = async (data) => {
   }
 };
 const login = async (data) => {
-  if (data.email && data.password) {
-    const user = await UserModel.findOne({ email: data.email });
+  if (data.identify && data.password) {
+    const user = await UserModel.findOne({
+      $or: [{ email: data.identify }, { phone: data.identify }]
+    });
+
     if (!user) {
-      throw new Error('Email hoặc mật khẩu không đúng.');
+      throw new Error('Email hoặc số điện thoại không đúng');
     }
     const isMatch = await bcrypt.compare(data.password, user.password);
     if (!isMatch) {

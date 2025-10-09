@@ -97,12 +97,6 @@ const upgradeToProvider = async (id, data) => {
   } else if (providerCheck && user.role === 'user') {
     throw new Error('Bạn đã đăng ký. Vui lòng chờ Quản trị viên duyệt.');
   } else {
-    const checkPhone = await OwnerModel.findOne({
-      phone: data.phone
-    });
-    if (checkPhone) {
-      throw new Error('Số điện thoại đã tồn tại.');
-    }
     const ownerInfo = new OwnerModel({
       userId: id,
       phone: data.phone,

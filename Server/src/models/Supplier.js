@@ -8,7 +8,6 @@ const ownerInfoSchema = new mongoose.Schema(
       required: true,
       unique: true
     },
-    phone: { type: String, required: true },
     cardHolderName: { type: String, required: true },
     cardNumber: { type: String, required: true },
     bankAccount: { type: String, required: true },

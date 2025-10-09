@@ -4,7 +4,8 @@ const {
   getBookingById,
   deletedBooking,
   cancelBooking,
-  getServiceBookingsBySupplierId
+  getServiceBookingsBySupplierId,
+  deleteBookingForSupplier
 } = require('../controllers/bookingController');
 const express = require('express');
 const router = express.Router();
@@ -15,5 +16,6 @@ router
   .get('/:bookingId', verifyToken, getBookingById)
   .get('/', verifyToken, getBookingsController)
   .patch('/:bookingId', verifyToken, cancelBooking)
+  .delete('/supplier/:bookingId', deleteBookingForSupplier)
   .delete('/:bookingId', verifyToken, deletedBooking);
 module.exports = router;
