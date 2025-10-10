@@ -8,7 +8,9 @@ const {
   updateActivePlace,
   updatePlaceService,
   getHotelsNearPlace,
-  getPlacesByAddress
+  getPlacesByAddress,
+  getPlacesPopularByType,
+  getPlacesPopular
 } = require('../services/Place');
 
 const addPlace = async (req, res) => {
@@ -38,8 +40,14 @@ const getInfoOnePlace = async (req, res) => {
 };
 const getAll = async (req, res) => {
   try {
-    const result = await getAllPlace();
-    res.status(200).json(result);
+    const { type } = req.query;
+    if (type) {
+      const result = await getPlacesPopularByType(type);
+      return res.status(200).json(result);
+    } else {
+      const result = await getAllPlace();
+      res.status(200).json(result);
+    }
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -125,10 +133,17 @@ const updatePlace = async (req, res) => {
     const result = await updatePlaceService(placeId, userId, data);
     res.json(result);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
-
+const getPlacesPopularController = async (req, res) => {
+  try {
+    const result = await getPlacesPopular();
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   addPlace,
   getInfoOnePlace,
@@ -138,5 +153,6 @@ module.exports = {
   updateStatusActive,
   getAllByUserId,
   updatePlace,
-  getHotelsNear
+  getHotelsNear,
+  getPlacesPopularController
 };

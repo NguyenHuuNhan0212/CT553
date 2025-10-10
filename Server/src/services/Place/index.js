@@ -1,6 +1,6 @@
 const PlaceModel = require('../../models/Place');
 const OwnerInfo = require('../../models/Supplier');
-
+const BookingModel = require('../../models/Booking');
 const addPlaceService = async (userId, data) => {
   const { type, name, address, images, description, services, hotelDetail } =
     data;
@@ -127,7 +127,6 @@ const removePlace = async (userId, placeId) => {
   return { message: 'Xóa địa điểm thành công' };
 };
 
-// ✅ Toggle active
 const updateActivePlace = async (userId, placeId) => {
   const place = await PlaceModel.findOne({ _id: placeId, userId });
   if (!place) throw new Error('Địa điểm không tồn tại');
@@ -140,7 +139,7 @@ const updateActivePlace = async (userId, placeId) => {
     message: 'Cập nhật trạng thái hoạt động thành công.'
   };
 };
-// ✅ Cập nhật Place + dịch vụ
+
 const updatePlaceService = async (placeId, userId, data) => {
   const { type, name, address, images, description, services, hotelDetail } =
     data;
@@ -149,7 +148,6 @@ const updatePlaceService = async (placeId, userId, data) => {
   if (!place)
     throw new Error('Địa điểm không tồn tại hoặc bạn không có quyền sửa.');
 
-  // Update fields
   place.type = type || place.type;
   place.name = name || place.name;
   place.address = address || place.address;
@@ -186,6 +184,56 @@ const updatePlaceService = async (placeId, userId, data) => {
 
   return { message: 'Cập nhật địa điểm thành công.', place };
 };
+
+const getPlacesPopularByType = async (type) => {
+  const places = await PlaceModel.find({ type }).lean();
+
+  if (!places.length) return [];
+  const placeIds = places.map((p) => p._id);
+
+  const popularStats = await BookingModel.aggregate([
+    { $match: { placeId: { $in: placeIds } } },
+    { $group: { _id: '$placeId', totalBookings: { $sum: 1 } } },
+    { $sort: { totalBookings: -1 } },
+    { $limit: 8 }
+  ]);
+  const popularPlaces = await Promise.all(
+    popularStats.map(async (stat) => {
+      const place = places.find(
+        (p) => p._id.toString() === stat._id.toString()
+      );
+      return {
+        ...place,
+        totalBookings: stat.totalBookings
+      };
+    })
+  );
+
+  return popularPlaces;
+};
+
+const getPlacesPopular = async () => {
+  const places = await PlaceModel.find().lean();
+  const placeIds = places.map((p) => p._id);
+
+  const popularStats = await BookingModel.aggregate([
+    { $group: { _id: '$placeId', totalBookings: { $sum: 1 } } },
+    { $sort: { totalBookings: -1 } },
+    { $limit: 8 }
+  ]);
+  const popularPlaces = await Promise.all(
+    popularStats.map((stat) => {
+      const place = places.find(
+        (p) => p._id.toString() === stat._id.toString()
+      );
+      return {
+        ...place,
+        totalBookings: stat.totalBookings
+      };
+    })
+  );
+  return popularPlaces;
+};
 module.exports = {
   addPlaceService,
   getOnePlace,
@@ -196,5 +244,7 @@ module.exports = {
   updateActivePlace,
   updatePlaceService,
   getHotelsNearPlace,
-  getPlacesByAddress
+  getPlacesByAddress,
+  getPlacesPopularByType,
+  getPlacesPopular
 };
