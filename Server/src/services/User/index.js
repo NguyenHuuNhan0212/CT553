@@ -31,18 +31,19 @@ const uploadProfile = async (id, data) => {
     throw new Error('Người dùng không tồn tại!');
   }
   let updateProvider = null;
+
+  const checkPhone = await UserModel.findOne({
+    phone: data.phone,
+    userId: { $ne: user._id }
+  });
+
+  if (checkPhone) {
+    throw new Error('Số điện thoại đã tồn tại.');
+  }
   if (user.role === 'provider') {
-    const checkPhone = await OwnerModel.findOne({
-      phone: data.phone,
-      userId: { $ne: user._id }
-    });
-    if (checkPhone) {
-      throw new Error('Số điện thoại đã tồn tại.');
-    }
     updateProvider = await OwnerModel.findOneAndUpdate(
       { userId: user._id },
       {
-        phone: data.phone,
         bankAccount: data.bankAccount,
         bankName: data.bankName,
         cardHolderName: data.cardHolderName,
@@ -54,7 +55,7 @@ const uploadProfile = async (id, data) => {
 
   const updateUser = await UserModel.findByIdAndUpdate(
     id,
-    { fullName: data.fullName, email: data.email },
+    { fullName: data.fullName, email: data.email, phone: data.phone },
     { new: true }
   ).lean();
 
@@ -99,7 +100,6 @@ const upgradeToProvider = async (id, data) => {
   } else {
     const ownerInfo = new OwnerModel({
       userId: id,
-      phone: data.phone,
       bankAccount: data.bankAccount,
       bankName: data.bankName,
       cardHolderName: data.cardHolderName,
