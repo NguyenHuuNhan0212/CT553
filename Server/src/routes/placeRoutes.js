@@ -22,6 +22,7 @@ router
   .post('/', verifyToken, upload.array('images'), addPlace)
   .get('/my-services', verifyToken, getAllByUserId)
   .get('/hotels/search', getSearchHotels)
+  .get('/near-hotels', getHotelsNear)
   .get('/hotel/:hotelId', getHotelDetailByReqUser)
   .get('/relative', getPlaceRelativeByTypeAndAddress)
   .get('/popular', getPlacesPopularController)

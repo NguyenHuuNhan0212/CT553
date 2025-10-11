@@ -94,14 +94,25 @@ const getPlaceRelative = async (id, type, address) => {
   });
   return { places };
 };
-const getPlacesByAddress = async (address) => {
-  const places = await PlaceModel.find({
-    address: { $regex: address, $options: 'i' },
-    deleted: false,
-    isActive: true,
-    isApprove: true
-  });
-  return { places };
+const getPlacesByAddressAndType = async (type, address) => {
+  if (type === 'all') {
+    const places = await PlaceModel.find({
+      address: { $regex: address, $options: 'i' },
+      deleted: false,
+      isActive: true,
+      isApprove: true
+    });
+    return { places };
+  } else {
+    const places = await PlaceModel.find({
+      address: { $regex: address, $options: 'i' },
+      type: type,
+      deleted: false,
+      isActive: true,
+      isApprove: true
+    });
+    return { places };
+  }
 };
 const getHotelsNearPlace = async (address) => {
   const hotels = await PlaceModel.find({
@@ -244,7 +255,7 @@ module.exports = {
   updateActivePlace,
   updatePlaceService,
   getHotelsNearPlace,
-  getPlacesByAddress,
+  getPlacesByAddressAndType,
   getPlacesPopularByType,
   getPlacesPopular
 };

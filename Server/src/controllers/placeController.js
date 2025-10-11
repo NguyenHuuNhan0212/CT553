@@ -8,7 +8,7 @@ const {
   updateActivePlace,
   updatePlaceService,
   getHotelsNearPlace,
-  getPlacesByAddress,
+  getPlacesByAddressAndType,
   getPlacesPopularByType,
   getPlacesPopular
 } = require('../services/Place');
@@ -55,9 +55,10 @@ const getAll = async (req, res) => {
 const getPlaceRelativeByTypeAndAddress = async (req, res) => {
   try {
     const { id, type, address } = req.query;
+
     let result = null;
-    if (!id && !type && address) {
-      result = await getPlacesByAddress(address);
+    if (!id && type && address) {
+      result = await getPlacesByAddressAndType(type, address);
     } else {
       result = await getPlaceRelative(id, type, address);
     }
