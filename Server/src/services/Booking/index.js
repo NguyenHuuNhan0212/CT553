@@ -90,22 +90,42 @@ const createBooking = async (userId, data) => {
 const getBookings = async (userId) => {
   const bookings = await BookingModel.find({ userId, isDeleted: false })
     .populate('placeId', 'name type address')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
+  const bookingIds = bookings.map((b) => b._id);
+  const payments = await PaymentModel.find({
+    bookingId: { $in: bookingIds }
+  }).lean();
+  const bookingsWithPayment = bookings.map((b) => {
+    const payment = payments.find(
+      (p) => p.bookingId.toString() === b._id.toString()
+    );
 
-  return bookings.map((b) => {
-    const placeName = b.placeId?.name || 'Không xác định';
     const placeType = b.placeId?.type;
     const serviceName =
       placeType === 'hotel'
-        ? 'Khách sạn, nhà nghĩ'
+        ? 'Khách sạn, nhà nghỉ'
         : placeType === 'restaurant'
         ? 'Nhà hàng, quán ăn'
         : placeType === 'cafe'
         ? 'Quán cafe'
         : 'Địa điểm du lịch';
 
-    return { ...b.toObject(), placeName, serviceName };
+    return {
+      ...b,
+      placeName: b.placeId?.name || 'Không xác định',
+      serviceName,
+      paymentInfo: payment
+        ? {
+            method: payment.method,
+            amount: payment.amount,
+            status: payment.status
+          }
+        : null
+    };
   });
+
+  return bookingsWithPayment;
 };
 
 const getBookingDetail = async (userId, bookingId) => {
@@ -186,7 +206,7 @@ const deleteBookingForUser = async (userId, bookingId) => {
 const handleCancelBooking = async (userId, bookingId) => {
   const booking = await BookingModel.findOne({ userId, _id: bookingId }).lean();
   if (!booking) {
-    throw new Error('Booking not found');
+    throw new Error('Không tìm thấy Booking');
   } else {
     const payment = await PaymentModel.findOne({ bookingId });
     const isValidOffline =

@@ -13,6 +13,11 @@ const {
   getPlacesPopular
 } = require('../services/Place');
 
+const {
+  handleAddPlaceFavorite,
+  handleRemovePlaceFavorite,
+  handleGetPlacesFavorite
+} = require('../services/PlaceFavorite');
 const addPlace = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -145,6 +150,38 @@ const getPlacesPopularController = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const addPlaceFavorite = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { placeId } = req.body;
+    const result = await handleAddPlaceFavorite(userId, placeId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const removePlaceFavorite = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { placeId } = req.params;
+    const result = await handleRemovePlaceFavorite(userId, placeId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getPlacesFavorite = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const result = await handleGetPlacesFavorite(userId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   addPlace,
   getInfoOnePlace,
@@ -155,5 +192,8 @@ module.exports = {
   getAllByUserId,
   updatePlace,
   getHotelsNear,
-  getPlacesPopularController
+  getPlacesPopularController,
+  addPlaceFavorite,
+  removePlaceFavorite,
+  getPlacesFavorite
 };

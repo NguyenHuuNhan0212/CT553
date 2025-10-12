@@ -8,7 +8,10 @@ const {
   updatePlace,
   getAllByUserId,
   getHotelsNear,
-  getPlacesPopularController
+  getPlacesPopularController,
+  addPlaceFavorite,
+  removePlaceFavorite,
+  getPlacesFavorite
 } = require('../controllers/placeController');
 const {
   getSearchHotels,
@@ -19,6 +22,7 @@ const router = express.Router();
 const verifyToken = require('../middlewares/authMiddleware');
 const upload = require('../middlewares/upload');
 router
+  .post('/favorite', verifyToken, addPlaceFavorite)
   .post('/', verifyToken, upload.array('images'), addPlace)
   .get('/my-services', verifyToken, getAllByUserId)
   .get('/hotels/search', getSearchHotels)
@@ -26,9 +30,12 @@ router
   .get('/hotel/:hotelId', getHotelDetailByReqUser)
   .get('/relative', getPlaceRelativeByTypeAndAddress)
   .get('/popular', getPlacesPopularController)
+  .get('/favorite', verifyToken, getPlacesFavorite)
   .get('/:placeId', getInfoOnePlace)
+  .get('/', getAll)
   .patch('/update-status-active/:placeId', verifyToken, updateStatusActive)
   .put('/:placeId', verifyToken, upload.array('images'), updatePlace)
-  .delete('/:placeId', verifyToken, deletePlace)
-  .get('/', getAll);
+  .delete('/favorite/:placeId', verifyToken, removePlaceFavorite)
+  .delete('/:placeId', verifyToken, deletePlace);
+
 module.exports = router;

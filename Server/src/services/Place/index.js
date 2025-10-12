@@ -52,7 +52,9 @@ const addPlaceService = async (userId, data) => {
 const getOnePlace = async (placeId) => {
   const place = await PlaceModel.findById(placeId);
   if (!place) throw new Error('Không tìm thấy địa điểm bạn chọn.');
-
+  if (place.deleted) {
+    throw new Error('Địa điểm hiện không còn.');
+  }
   const ownerInfo = await OwnerInfo.findOne({
     userId: place.userId
   }).populate('userId', 'fullName phone');
@@ -173,7 +175,7 @@ const updatePlaceService = async (placeId, userId, data) => {
       try {
         placeHotelDetailParsed = JSON.parse(hotelDetail);
       } catch (err) {
-        console.error('Parse hotelDetail error:', err);
+        console.error('Parse hotelDetail lỗi:', err);
       }
     }
     place.hotelDetail = placeHotelDetailParsed;
@@ -184,7 +186,7 @@ const updatePlaceService = async (placeId, userId, data) => {
     try {
       parsedServices = JSON.parse(services);
     } catch (err) {
-      console.error('Parse services error:', err);
+      console.error('Parse services lỗi:', err);
     }
   } else if (Array.isArray(services)) {
     parsedServices = services;
@@ -197,7 +199,12 @@ const updatePlaceService = async (placeId, userId, data) => {
 };
 
 const getPlacesPopularByType = async (type) => {
-  const places = await PlaceModel.find({ type }).lean();
+  const places = await PlaceModel.find({
+    type,
+    isActive: true,
+    deleted: false,
+    isApprove: true
+  }).lean();
 
   if (!places.length) return [];
   const placeIds = places.map((p) => p._id);
@@ -224,27 +231,34 @@ const getPlacesPopularByType = async (type) => {
 };
 
 const getPlacesPopular = async () => {
-  const places = await PlaceModel.find().lean();
-  const placeIds = places.map((p) => p._id);
+  const places = await PlaceModel.find({
+    isActive: true,
+    isApprove: true,
+    deleted: false
+  }).lean();
 
   const popularStats = await BookingModel.aggregate([
     { $group: { _id: '$placeId', totalBookings: { $sum: 1 } } },
     { $sort: { totalBookings: -1 } },
     { $limit: 8 }
   ]);
-  const popularPlaces = await Promise.all(
-    popularStats.map((stat) => {
+
+  const popularPlaces = popularStats
+    .map((stat) => {
       const place = places.find(
         (p) => p._id.toString() === stat._id.toString()
       );
+      if (!place) return null;
       return {
         ...place,
         totalBookings: stat.totalBookings
       };
     })
-  );
+    .filter((p) => p !== null);
+
   return popularPlaces;
 };
+
 module.exports = {
   addPlaceService,
   getOnePlace,
