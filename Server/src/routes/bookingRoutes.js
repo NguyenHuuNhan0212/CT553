@@ -6,12 +6,14 @@ const {
   cancelBooking,
   getServiceBookingsBySupplierId,
   deleteBookingForSupplier,
-  confirmPayment
+  confirmPayment,
+  createInternalBookingController
 } = require('../controllers/bookingController');
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middlewares/authMiddleware');
 router
+  .post('/internal', verifyToken, createInternalBookingController)
   .post('/', verifyToken, createBookingController)
   .get('/supplier', verifyToken, getServiceBookingsBySupplierId)
   .get('/:bookingId', verifyToken, getBookingById)

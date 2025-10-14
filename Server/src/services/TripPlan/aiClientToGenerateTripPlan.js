@@ -116,7 +116,8 @@ Nguyên tắc:
 5. **Không được chọn hotel trong bất kỳ ngày nào.**
 6. **Tất cả các địa điểm trong cùng ngày nên ở gần nhau (ưu tiên cùng phường/xã hoặc lân cận).**
 7. Phân bổ đều địa điểm, tránh lặp lại quá 2 lần trong toàn lịch trình.
-8. Nếu dữ liệu ít, có thể tái sử dụng một số địa điểm, nhưng không được trống.
+8. NẾU DỮ LIỆU ÍT CÓ THỂ TÁI SỬ DỤNG MỘT SỐ ĐỊA ĐIỂM NHƯNG KHÔNG ĐƯỢC ĐỂ TRỐNG.
+9. Luôn gửi về đầy đủ lịch trình của các ngày.
 
 👉 Sau khi tạo xong toàn bộ lịch trình ${
     aiInput.numDays
@@ -135,7 +136,13 @@ Mục này **không gắn theo ngày** mà là danh sách tổng thể.
     "afternoon": [ ... ],
     "evening": [ ... ]
   },
-  "day2": { ... },
+  "day2": {
+    "morning": [ { "id": "...", "name": "...", "ward": "...", "address": "...", "description": "...", "services": [...] } ],
+    "noon": [ ... ],
+    "afternoon": [ ... ],
+    "evening": [ ... ]
+  },
+  "day3": {...},
   ...
   "hotel_suggestions": [
     { "id": "...", "name": "...", "ward": "...", "address": "...", "description": "...", "services": [...] }

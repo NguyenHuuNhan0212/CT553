@@ -40,7 +40,10 @@ const placeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 placeSchema.pre('save', function (next) {
-  this.totalServices = this.services?.length || 0;
+  this.totalServices =
+    this.type !== 'hotel'
+      ? this.services?.length || 0
+      : (this.services?.length || 0) + 1;
   next();
 });
 module.exports = mongoose.model('Place', placeSchema);

@@ -17,7 +17,8 @@ function isTransportQuestion(question) {
 
 const ask = async (req, res) => {
   try {
-    const { userId, question } = req.body;
+    const { userId } = req.user;
+    const { question } = req.body;
     if (!question) return res.status(400).json({ message: 'Missing question' });
 
     // Lưu câu hỏi user

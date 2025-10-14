@@ -6,7 +6,8 @@ const {
   handleCancelBooking,
   getServiceBookingForPlace,
   handleDeleteForSupplier,
-  handleConfirmPayment
+  handleConfirmPayment,
+  createInternalBookingForSupplier
 } = require('../services/Booking');
 
 const createBookingController = async (req, res) => {
@@ -19,6 +20,17 @@ const createBookingController = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+const createInternalBookingController = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const data = req.body;
+    const result = await createInternalBookingForSupplier(userId, data);
+    return res.status(201).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 const getBookingsController = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -99,5 +111,6 @@ module.exports = {
   cancelBooking,
   getServiceBookingsBySupplierId,
   deleteBookingForSupplier,
-  confirmPayment
+  confirmPayment,
+  createInternalBookingController
 };

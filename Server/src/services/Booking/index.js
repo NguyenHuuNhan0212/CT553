@@ -309,6 +309,75 @@ const handleConfirmPayment = async (bookingId) => {
     };
   }
 };
+const createInternalBookingForSupplier = async (supplierId, data) => {
+  const { placeId, checkInDate, checkOutDate, roomTypeId, quantity } = data;
+
+  if (!placeId || !roomTypeId)
+    throw new Error('Thiếu thông tin địa điểm hoặc loại phòng.');
+  if (!checkInDate || !checkOutDate)
+    throw new Error('Vui lòng chọn ngày check-in và check-out.');
+
+  const place = await PlaceModel.findOne({
+    _id: placeId,
+    userId: supplierId
+  }).lean();
+  if (!place) throw new Error('Bạn không có quyền thao tác trên địa điểm này.');
+
+  const checkIn = new Date(checkInDate);
+  const checkOut = new Date(checkOutDate);
+  const nights = nightsBetween(checkIn, checkOut);
+  if (nights <= 0) throw new Error('Ngày check-out phải sau ngày check-in.');
+
+  const roomType = place.hotelDetail?.roomTypes.find(
+    (r) => String(r._id) === String(roomTypeId)
+  );
+  if (!roomType) throw new Error('Loại phòng không tồn tại.');
+
+  const booked = await countBookedRooms(
+    placeId,
+    roomType._id,
+    checkIn,
+    checkOut
+  );
+  const available = roomType.totalRooms - booked;
+  if (available < quantity)
+    throw new Error(
+      `Không đủ phòng loại "${roomType.name}". Còn ${available}.`
+    );
+
+  const totalPrice = roomType.pricePerNight * nights * quantity;
+
+  const booking = await BookingModel.create({
+    userId: null, // vì đây là booking nội bộ
+    placeId,
+    checkInDate: checkIn,
+    checkOutDate: checkOut,
+    totalPrice,
+    status: 'confirmed',
+    bookingDetails: [
+      {
+        roomTypeId: roomType._id,
+        roomTypeName: roomType.name,
+        quantity,
+        priceAtBooking: roomType.pricePerNight
+      }
+    ]
+  });
+
+  await PaymentModel.create({
+    bookingId: booking._id,
+    amount: totalPrice,
+    method: 'offline',
+    status: 'success',
+    paymentType: 'full'
+  });
+
+  return {
+    booking,
+    message: `Tạo booking nội bộ thành công cho loại phòng "${roomType.name}".`
+  };
+};
+
 module.exports = {
   createBooking,
   getBookings,
@@ -317,5 +386,6 @@ module.exports = {
   handleCancelBooking,
   getServiceBookingForPlace,
   handleDeleteForSupplier,
-  handleConfirmPayment
+  handleConfirmPayment,
+  createInternalBookingForSupplier
 };
