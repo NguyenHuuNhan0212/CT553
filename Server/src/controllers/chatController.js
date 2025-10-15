@@ -26,7 +26,7 @@ const ask = async (req, res) => {
     await ChatMessage.create({ userId, role: 'user', content: question });
 
     let answer = '';
-
+    let tripPlan = null;
     // === 1. Kiểm tra xem user đang trả lời số ngày không ===
     if (/^\d+(\s*ngày)?$/.test(question)) {
       // Tìm message gần nhất của user có awaitingDays = true
@@ -37,7 +37,7 @@ const ask = async (req, res) => {
 
       if (lastState) {
         const numDays = parseInt(question.match(/\d+/)[0]);
-        const tripPlan = await createTripPlan(lastState.city, numDays);
+        tripPlan = await createTripPlan(lastState.city, numDays);
 
         answer = tripPlan
           ? await formatTripPlanWithGPT(tripPlan, numDays, lastState.city)
@@ -54,7 +54,11 @@ const ask = async (req, res) => {
         });
       }
 
-      return res.json({ answer });
+      return res.json({
+        answer,
+        tripPlan,
+        isTripPlan: tripPlan ? true : false
+      });
     }
     if (isTransportQuestion(question)) {
       // Lấy lịch sử hội thoại gần đây
@@ -65,9 +69,10 @@ const ask = async (req, res) => {
       const messages = [
         {
           role: 'system',
-          content:
-            'Bạn là trợ lý AI chuyên du lịch, hãy tư vấn phương tiện đi lại giữa các tỉnh thành ở Việt Nam. Hãy gợi ý phương tiện rẻ nhất, nhanh nhất và hợp lý nhất.'
+          content: `Bạn là trợ lý AI chuyên du lịch, hãy tư vấn phương tiện đi lại giữa các tỉnh thành ở Việt Nam.
+              Hãy gợi ý phương tiện rẻ nhất, nhanh nhất và hợp lý nhất. TRẢ LỜI VỀ DƯỚI DẠNG HTML`
         },
+
         ...history
           .reverse()
           .filter((h) => h.role && h.content)
@@ -76,7 +81,9 @@ const ask = async (req, res) => {
       ];
       const answer = await chatWithLLM(messages);
       await ChatMessage.create({ userId, role: 'assistant', content: answer });
-      return res.json({ answer });
+      return res.json({
+        answer
+      });
     }
     // === 2. Phân loại câu hỏi mới ===
     const category = await classifyQuestion(question);
@@ -130,7 +137,7 @@ const ask = async (req, res) => {
             avgPrice: getAvgCost(p)
           };
         });
-        if (!places.length) {
+        if (!placesWithAvg.length) {
           answer = `Xin lỗi, tôi chưa có dữ liệu về ${
             foundType || 'địa điểm'
           } ở ${cityToUse}.`;
@@ -157,7 +164,7 @@ const ask = async (req, res) => {
                         : foundType === 'cafe'
                         ? 'VND/dịch vụ'
                         : foundType === 'touristSpot'
-                        ? 'VND/vé'
+                        ? 'VND/dịch vụ'
                         : ''
                       : ''
                   }`
@@ -220,7 +227,7 @@ const ask = async (req, res) => {
           awaitingDays: true
         });
       } else {
-        const tripPlan = await createTripPlan(city, numDays);
+        tripPlan = await createTripPlan(city, numDays);
         answer = tripPlan
           ? await formatTripPlanWithGPT(tripPlan, numDays, city)
           : `Xin lỗi, hiện tại tôi không có dữ liệu địa điểm ở ${city}.`;
@@ -235,7 +242,7 @@ const ask = async (req, res) => {
       }
     }
 
-    res.json({ answer });
+    res.json({ answer, tripPlan, isTripPlan: tripPlan ? true : false });
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: e.message });

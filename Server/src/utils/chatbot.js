@@ -103,6 +103,7 @@ async function createTripPlan(city, numDays = 1) {
 
     mixed.forEach((p) =>
       dayPlan.activities.push({
+        placeId: p._id,
         name: p.name,
         address: p.address,
         cost: getAvgCost(p),
@@ -132,25 +133,28 @@ async function formatTripPlanWithGPT(tripPlan, numDays, city) {
     {
       role: 'system',
       content: `
-Bạn là một trợ lý du lịch thân thiện, hãy trình bày lịch trình ngắn gọn và tự nhiên như đang tư vấn.
-Không chia buổi sáng/trưa/chiều/tối, chỉ cần mô tả theo ngày với danh sách các địa điểm gợi ý.
-Dùng markdown và emoji cho dễ đọc.
+Bạn là **Trợ lý Du lịch AI**, hãy tạo lịch trình du lịch chi tiết và trình bày đẹp mắt.
+YÊU CẦU RẤT QUAN TRỌNG:
+- LUÔN LUÔN trả về kết quả ở dạng **HTML hoàn chỉnh**, có thể hiển thị trực tiếp trên giao diện web.
+- Sử dụng **emoji du lịch** (🍽️☕🏯🏨🌿🏖️🚤...) và định dạng đẹp như trong bài viết du lịch.
+- Dùng cấu trúc <h2>, <h3>, <ul>, <li> để phân chia rõ ràng.
+- **Không chia sáng/trưa/chiều/tối**, chỉ chia theo **Ngày 1, Ngày 2, ...**.
+- Cuối cùng thêm dòng ghi chú: *Chi phí chỉ mang tính ước lượng, có thể thay đổi tùy mùa và lựa chọn thực tế.*
+- Nếu có địa điểm có type là "hotel" → ghi rõ: “🏨 Gợi ý nghỉ đêm tại ...”.
+- Nếu có type là "cafe" → ghi rõ: “☕ ... (Chi phí phụ thuộc vào đồ uống bạn dùng)”.
+- Nếu không có giá → hiển thị “(Miễn phí)”.
+- Trình bày **ngắn gọn, tự nhiên như đang gợi ý cho khách du lịch**, có tiêu đề rõ ràng ví dụ “Lịch trình 3 ngày ở Cần Thơ”.
+- Tuyệt đối KHÔNG trả về Markdown hay JSON — chỉ trả về HTML.
 `
     },
     {
       role: 'user',
       content: `
-Đây là dữ liệu JSON của lịch trình ${numDays} ngày ở ${city}:\n
-${JSON.stringify(tripPlan, null, 2)}\n
+Dưới đây là dữ liệu JSON của lịch trình ${numDays} ngày ở ${city}:
+${JSON.stringify(tripPlan, null, 2)}
 
-Yêu cầu:
-- Mỗi ngày hiển thị các địa điểm gợi ý theo thứ tự hợp lý.
-- Kiểm tra địa chỉ "address" để đưa ra lịch trình hợp lý nhất.
-- Gợi ý thêm vài cảm xúc/nhận xét tự nhiên như "thử đặc sản", "check-in sống ảo", "nghỉ ngơi thư giãn" v.v.
-- Nếu có khách sạn, hãy ghi rõ "Gợi ý nghỉ đêm tại..." ở cuối ngày.
-- Trả lời thân thiện thêm cảm xúc tự nhiên.
-- Luôn luôn đưa chi phí ước tính vào từng địa điểm nếu không có hãy để là miễn phí.
-- Cuối cùng thêm lưu ý: *Chi phí chỉ mang tính ước lượng, có thể thay đổi tùy mùa và lựa chọn thực tế.*`
+Hãy tạo lịch trình theo các yêu cầu trên và trình bày thật đẹp mắt, sinh động, có đầu đề, emoji, chi phí, và phần ghi chú ở cuối.
+`
     }
   ];
 
