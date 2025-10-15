@@ -27,15 +27,15 @@ const handleRemovePlaceFavorite = async (userId, placeId) => {
 };
 
 const handleGetPlacesFavorite = async (userId) => {
-  const placesFavorite = await UserFavoriteModel.find({ userId }).populate(
-    'placeId'
-  );
+  const placesFavorite = await UserFavoriteModel.find({ userId })
+    .sort({ addDate: -1 })
+    .populate('placeId');
   if (!placesFavorite.length) {
     return [];
   } else {
-    const placeIds = placesFavorite.map((pf) => pf.placeId);
-    const places = await PlaceModel.find({ _id: { $in: placeIds } });
-    return places;
+    // const placeIds = placesFavorite.map((pf) => pf.placeId);
+    // const places = await PlaceModel.find({ _id: { $in: placeIds } });
+    return placesFavorite;
   }
 };
 module.exports = {

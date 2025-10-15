@@ -35,40 +35,6 @@ function shuffleArray(array) {
     .map(({ item }) => item);
 }
 
-// Hàm tính độ giống nhau giữa 2 chuỗi (tỉ lệ match)
-function stringSimilarity(str1, str2) {
-  if (!str1 || !str2) return 0;
-  str1 = str1.toLowerCase();
-  str2 = str2.toLowerCase();
-  let matches = 0;
-  const minLen = Math.min(str1.length, str2.length);
-  for (let i = 0; i < minLen; i++) {
-    if (str1[i] === str2[i]) matches++;
-  }
-  return matches / minLen;
-}
-
-// Chọn hotel gần nhất so với address của place tối
-function findNearestHotel(hotels, eveningPlace) {
-  if (!hotels.length || !eveningPlace?.address) return null;
-
-  let bestHotel = hotels[0];
-  let bestScore = 0;
-
-  hotels.forEach((hotel) => {
-    const score = stringSimilarity(
-      eveningPlace.address?.name,
-      hotel.address?.name
-    );
-    if (score > bestScore) {
-      bestScore = score;
-      bestHotel = hotel;
-    }
-  });
-
-  return bestHotel;
-}
-
 // Tạo lịch trình từ Place với phân chia thời gian
 function pickMultiple(list, backupList, count = 1) {
   const results = [];
@@ -85,95 +51,22 @@ function pickMultiple(list, backupList, count = 1) {
 
   return results.filter(Boolean);
 }
-
-// async function createTripPlan(city, numDays = 1) {
-//   const places = await Place.find({
-//     address: { $regex: city, $options: 'i' }
-//   });
-
-//   if (!places.length) return null;
-
-//   let hotels = shuffleArray(places.filter((p) => p.type === 'hotel'));
-//   let restaurants = shuffleArray(places.filter((p) => p.type === 'restaurant'));
-//   let attractions = shuffleArray(
-//     places.filter((p) => p.type !== 'hotel' && p.type !== 'restaurant')
-//   );
-
-//   // Giữ backup để có thể reuse
-//   const backupHotels = [...hotels];
-//   const backupRestaurants = [...restaurants];
-//   const backupAttractions = [...attractions];
-
-//   const plan = [];
-
-//   for (let day = 1; day <= numDays; day++) {
-//     const dayPlan = { day, activities: [] };
-
-//     // Sáng (2 option)
-//     const morningOptions = pickMultiple(attractions, backupAttractions, 2);
-//     morningOptions.forEach((opt) =>
-//       dayPlan.activities.push({
-//         time: 'Sáng',
-//         ...opt.toObject(),
-//         cost: opt.avgPrice || 0
-//       })
-//     );
-
-//     // Trưa (2 option)
-//     const lunchOptions = pickMultiple(restaurants, backupRestaurants, 2);
-//     lunchOptions.forEach((opt) =>
-//       dayPlan.activities.push({
-//         time: 'Trưa',
-//         ...opt.toObject(),
-//         cost: opt.avgPrice || 0
-//       })
-//     );
-
-//     // Chiều (2 option)
-//     const afternoonOptions = pickMultiple(attractions, backupAttractions, 2);
-//     afternoonOptions.forEach((opt) =>
-//       dayPlan.activities.push({
-//         time: 'Chiều',
-//         ...opt.toObject(),
-//         cost: opt.avgPrice || 0
-//       })
-//     );
-
-//     // Tối (2 option, ưu tiên nhà hàng/quán ăn)
-//     const eveningOptions = pickMultiple(restaurants, backupRestaurants, 2);
-//     eveningOptions.forEach((opt) =>
-//       dayPlan.activities.push({
-//         time: 'Tối',
-//         ...opt.toObject(),
-//         cost: opt.avgPrice || 0
-//       })
-//     );
-
-//     // ✅ Thêm khách sạn vào cuối (duy nhất 1 hotel cho mỗi ngày)
-//     let hotel = null;
-//     if (hotels.length) {
-//       // chọn khách sạn gần với địa điểm ăn tối đầu tiên
-//       hotel = findNearestHotel(hotels, eveningOptions[0]);
-//       // nếu không tìm thấy, chọn ngẫu nhiên 1 cái
-//       if (!hotel) hotel = hotels.pop() || backupHotels.pop();
-//     } else if (backupHotels.length) {
-//       hotel = backupHotels.pop();
-//     }
-
-//     if (hotel) {
-//       dayPlan.activities.push({
-//         time: 'Ngủ',
-//         ...hotel.toObject(),
-//         cost: hotel.avgPrice || 0
-//       });
-//     }
-
-//     plan.push(dayPlan);
-//   }
-
-//   return plan;
-// }
-
+// Hàm tính chi phí trung bình
+const getAvgCost = (place) => {
+  if (place.hotelDetail?.roomTypes?.length)
+    return Math.round(
+      place.hotelDetail.roomTypes.reduce(
+        (a, r) => a + (r.pricePerNight || 0),
+        0
+      ) / place.hotelDetail.roomTypes.length
+    );
+  if (place.services?.length)
+    return Math.round(
+      place.services.reduce((a, s) => a + (s.price || 0), 0) /
+        place.services.length
+    );
+  return 0;
+};
 async function createTripPlan(city, numDays = 1) {
   const places = await Place.find({
     address: { $regex: city, $options: 'i' }
@@ -181,15 +74,16 @@ async function createTripPlan(city, numDays = 1) {
 
   if (!places.length) return null;
 
-  let hotels = shuffleArray(places.filter((p) => p.type === 'hotel'));
-  let restaurants = shuffleArray(
+  // Phân loại
+  const hotels = shuffleArray(places.filter((p) => p.type === 'hotel'));
+  const restaurants = shuffleArray(
     places.filter((p) => p.type === 'restaurant' || p.type === 'cafe')
   );
-  let attractions = shuffleArray(
+  const attractions = shuffleArray(
     places.filter((p) => p.type === 'touristSpot')
   );
 
-  // Giữ backup
+  // Backup
   const backupHotels = [...hotels];
   const backupRestaurants = [...restaurants];
   const backupAttractions = [...attractions];
@@ -199,28 +93,16 @@ async function createTripPlan(city, numDays = 1) {
   for (let day = 1; day <= numDays; day++) {
     const dayPlan = { day, activities: [] };
 
-    // Hàm lấy chi phí trung bình từ service/room
-    const getAvgCost = (place) => {
-      if (place.hotelDetail?.roomTypes?.length)
-        return Math.round(
-          place.hotelDetail.roomTypes.reduce(
-            (a, r) => a + (r.pricePerNight || 0),
-            0
-          ) / place.hotelDetail.roomTypes.length
-        );
-      if (place.services?.length)
-        return Math.round(
-          place.services.reduce((a, s) => a + (s.price || 0), 0) /
-            place.services.length
-        );
-      return 0;
-    };
+    // Chọn ngẫu nhiên 4–6 địa điểm (bao gồm cả ăn uống)
+    const dayAttractions = pickMultiple(attractions, backupAttractions, 3);
+    const dayRestaurants = pickMultiple(restaurants, backupRestaurants, 2);
+    const mixed = shuffleArray([...dayAttractions, ...dayRestaurants]).slice(
+      0,
+      Math.floor(Math.random() * 3) + 3 // random 3–6 địa điểm/ngày
+    );
 
-    // Sáng
-    const morning = pickMultiple(attractions, backupAttractions, 2);
-    morning.forEach((p) =>
+    mixed.forEach((p) =>
       dayPlan.activities.push({
-        time: 'Sáng',
         name: p.name,
         address: p.address,
         cost: getAvgCost(p),
@@ -228,47 +110,10 @@ async function createTripPlan(city, numDays = 1) {
       })
     );
 
-    // Trưa
-    const lunch = pickMultiple(restaurants, backupRestaurants, 2);
-    lunch.forEach((p) =>
-      dayPlan.activities.push({
-        time: 'Trưa',
-        name: p.name,
-        address: p.address,
-        cost: getAvgCost(p),
-        type: p.type
-      })
-    );
-
-    // Chiều
-    const afternoon = pickMultiple(attractions, backupAttractions, 2);
-    afternoon.forEach((p) =>
-      dayPlan.activities.push({
-        time: 'Chiều',
-        name: p.name,
-        address: p.address,
-        cost: getAvgCost(p),
-        type: p.type
-      })
-    );
-
-    // Tối
-    const evening = pickMultiple(restaurants, backupRestaurants, 2);
-    evening.forEach((p) =>
-      dayPlan.activities.push({
-        time: 'Tối',
-        name: p.name,
-        address: p.address,
-        cost: getAvgCost(p),
-        type: p.type
-      })
-    );
-
-    // Ngủ
-    let hotel = hotels.pop() || backupHotels.pop();
+    // Gợi ý khách sạn (mỗi ngày 1 cái)
+    const hotel = hotels.pop() || backupHotels.pop();
     if (hotel) {
       dayPlan.activities.push({
-        time: 'Ngủ',
         name: hotel.name,
         address: hotel.address,
         cost: getAvgCost(hotel),
@@ -286,19 +131,26 @@ async function formatTripPlanWithGPT(tripPlan, numDays, city) {
   const messages = [
     {
       role: 'system',
-      content: `Bạn là trợ lý du lịch thân thiện, hãy trình bày lịch trình gọn gàng bằng markdown, có emoji, dễ đọc, tự nhiên như đang tư vấn.`
+      content: `
+Bạn là một trợ lý du lịch thân thiện, hãy trình bày lịch trình ngắn gọn và tự nhiên như đang tư vấn.
+Không chia buổi sáng/trưa/chiều/tối, chỉ cần mô tả theo ngày với danh sách các địa điểm gợi ý.
+Dùng markdown và emoji cho dễ đọc.
+`
     },
     {
       role: 'user',
       content: `
 Đây là dữ liệu JSON của lịch trình ${numDays} ngày ở ${city}:\n
-${JSON.stringify(tripPlan)}\n
+${JSON.stringify(tripPlan, null, 2)}\n
 
 Yêu cầu:
-- Trình bày lịch trình chia theo ngày (sáng, trưa, chiều, tối, ngủ).
-- Mỗi hoạt động nên có tên, địa chỉ, chi phí.
-- Viết thân mật, gợi ý thêm chút cảm xúc (ví dụ: “thử đặc sản”, “chụp hình sống ảo”).
-- Cuối cùng **cảnh báo rõ**: đây chỉ là chi phí ước tính, thực tế có thể thay đổi do mùa, địa điểm, lựa chọn nhà hàng/khách sạn.`
+- Mỗi ngày hiển thị các địa điểm gợi ý theo thứ tự hợp lý.
+- Kiểm tra địa chỉ "address" để đưa ra lịch trình hợp lý nhất.
+- Gợi ý thêm vài cảm xúc/nhận xét tự nhiên như "thử đặc sản", "check-in sống ảo", "nghỉ ngơi thư giãn" v.v.
+- Nếu có khách sạn, hãy ghi rõ "Gợi ý nghỉ đêm tại..." ở cuối ngày.
+- Trả lời thân thiện thêm cảm xúc tự nhiên.
+- Luôn luôn đưa chi phí ước tính vào từng địa điểm nếu không có hãy để là miễn phí.
+- Cuối cùng thêm lưu ý: *Chi phí chỉ mang tính ước lượng, có thể thay đổi tùy mùa và lựa chọn thực tế.*`
     }
   ];
 
@@ -312,6 +164,7 @@ function isPlaceListQuestion(question) {
     q.includes('khách sạn') ||
     q.includes('hotel') ||
     q.includes('nhà hàng') ||
+    q.includes('địa điểm ăn uống') ||
     q.includes('quán ăn') ||
     q.includes('cafe') ||
     q.includes('quán cà phê') ||
@@ -327,5 +180,6 @@ module.exports = {
   isWeatherQuestion,
   createTripPlan,
   formatTripPlanWithGPT,
-  isPlaceListQuestion
+  isPlaceListQuestion,
+  getAvgCost
 };

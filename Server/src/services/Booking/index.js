@@ -83,6 +83,7 @@ const createBooking = async (userId, data) => {
     status: 'pending',
     bookingDetails
   });
+  await PlaceModel.findByIdAndUpdate(placeId, { $inc: { bookingCount: 1 } });
 
   return { booking, message: 'Đặt chỗ thành công.' };
 };
@@ -371,7 +372,7 @@ const createInternalBookingForSupplier = async (supplierId, data) => {
     status: 'success',
     paymentType: 'full'
   });
-
+  await PlaceModel.findByIdAndUpdate(placeId, { $inc: { bookingCount: 1 } });
   return {
     booking,
     message: `Tạo booking nội bộ thành công cho loại phòng "${roomType.name}".`

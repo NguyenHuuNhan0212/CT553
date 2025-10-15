@@ -34,6 +34,7 @@ const placeSchema = new mongoose.Schema(
     isApprove: { type: Boolean, default: false },
     deleted: { type: Boolean, default: false },
     totalServices: { type: Number, required: true, default: 0 },
+    bookingCount: { type: Number, default: 0 },
     hotelDetail: HotelDetailsSchema,
     services: [ServiceSchema]
   },

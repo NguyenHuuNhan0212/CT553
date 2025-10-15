@@ -8,7 +8,8 @@ const {
   isWeatherQuestion,
   createTripPlan,
   formatTripPlanWithGPT,
-  isPlaceListQuestion
+  isPlaceListQuestion,
+  getAvgCost
 } = require('../utils/chatbot');
 
 function isTransportQuestion(question) {
@@ -98,6 +99,7 @@ const ask = async (req, res) => {
           'khách sạn': 'hotel',
           hotel: 'hotel',
           'nhà hàng': 'restaurant',
+          'địa điểm ăn uống': 'restaurant',
           'quán ăn': 'restaurant',
           cafe: 'cafe',
           'quán cà phê': 'cafe',
@@ -118,8 +120,16 @@ const ask = async (req, res) => {
         const places = await Place.find({
           address: { $regex: cityToUse, $options: 'i' },
           type: foundType
+        })
+          .lean()
+          .sort({ bookingCount: -1 })
+          .limit(5);
+        const placesWithAvg = places.map((p) => {
+          return {
+            ...p,
+            avgPrice: getAvgCost(p)
+          };
         });
-
         if (!places.length) {
           answer = `Xin lỗi, tôi chưa có dữ liệu về ${
             foundType || 'địa điểm'
@@ -127,20 +137,28 @@ const ask = async (req, res) => {
         } else {
           answer =
             `Một số ${foundType} nổi bật tại ${cityToUse}:\n` +
-            places
+            placesWithAvg
               .map(
                 (p, i) =>
-                  `${i + 1}. ${p.name} - ${p.address} - ${
-                    p.description
-                  } - Giá trung bình: ${p.avgPrice || 'N/A'} VND${
-                    foundType === 'hotel'
-                      ? '/đêm'
-                      : foundType === 'restaurant'
-                      ? '/người'
-                      : foundType === 'cafe'
-                      ? '/ly'
-                      : foundType === 'touristSpot'
-                      ? '/vé'
+                  `<p>${i + 1}. ${p.name} - ${p.address}</p>
+                    <a href="http://localhost:5173/place/${
+                      p._id
+                    }" target="_blank" style="color:#1677ff;text-decoration:none;">
+  🔗 Xem chi tiết
+</a>
+                 ${p.description} - Giá trung bình: ${
+                    p.avgPrice || 'Không có thông tin về giá các dịch vụ'
+                  } ${
+                    p.avgPrice
+                      ? foundType === 'hotel'
+                        ? 'VND/đêm'
+                        : foundType === 'restaurant'
+                        ? 'VND/người'
+                        : foundType === 'cafe'
+                        ? 'VND/dịch vụ'
+                        : foundType === 'touristSpot'
+                        ? 'VND/vé'
+                        : ''
                       : ''
                   }`
               )
