@@ -33,4 +33,13 @@ const handleCreate = async (userId, data) => {
   };
 };
 
-module.exports = { handleCreate };
+const handleGetAllByUserId = async (userId) => {
+  const itineraries = await ItineraryModel.find({ userId })
+    .lean()
+    .sort({ createdAt: -1 });
+  if (!itineraries.length) return [];
+  return {
+    itineraries
+  };
+};
+module.exports = { handleCreate, handleGetAllByUserId };
