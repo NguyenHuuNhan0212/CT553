@@ -16,7 +16,7 @@ const itinerarySchema = new mongoose.Schema(
       enum: ['upcoming', 'completed'],
       default: 'upcoming'
     },
-    guest: { type: Number },
+    people: { type: Number },
     priceForItinerary: { type: Number },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true }

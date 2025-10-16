@@ -24,12 +24,13 @@ const handleCreate = async (userId, data) => {
       visitDay: d.visitDay,
       note: d.note,
       startTime: d.startTime,
-      endTime: d.endTime
+      endTime: d.endTime,
+      order: d.order
     }));
     await ItineraryDetailModel.insertMany(detailDocs);
   }
   return {
-    message: 'Created Itinerary successfully'
+    message: 'Tạo lịch trình thành công.'
   };
 };
 
@@ -37,9 +38,63 @@ const handleGetAllByUserId = async (userId) => {
   const itineraries = await ItineraryModel.find({ userId })
     .lean()
     .sort({ createdAt: -1 });
-  if (!itineraries.length) return [];
   return {
     itineraries
   };
 };
-module.exports = { handleCreate, handleGetAllByUserId };
+
+const handleGetItineraryDetail = async (itineraryId) => {
+  const itinerary = await ItineraryModel.findById(itineraryId);
+  if (!itinerary) {
+    throw new Error('Lịch trình không tồn tại.');
+  } else {
+    const itineraryDetail = await ItineraryDetailModel.find({
+      itineraryId
+    })
+      .sort({ visitDay: 1, order: 1 })
+      .populate('placeId');
+    return {
+      itinerary,
+      itineraryDetail
+    };
+  }
+};
+const handleUpdateStatus = async (userId, itineraryId) => {
+  const itinerary = await ItineraryModel.findOneAndUpdate(
+    { userId, _id: itineraryId },
+    { status: 'completed' }
+  );
+  if (!itinerary) {
+    throw new Error('Lịch trình không tồn tại.');
+  } else {
+    return {
+      message: 'Cập nhật trạng thái thành công.'
+    };
+  }
+};
+const handleAddPriceAndGuest = async (userId, itineraryId, data) => {
+  const { people, priceForItinerary } = data;
+  const itinerary = await ItineraryModel.findOne({
+    userId,
+    _id: itineraryId
+  }).lean();
+  if (!itinerary) {
+    throw new Error('Không tìm thấy lịch trình.');
+  } else {
+    const itineraryNew = await ItineraryModel.findByIdAndUpdate(itinerary._id, {
+      people,
+      priceForItinerary
+    });
+    return {
+      itineraryNew,
+      message: 'Thêm chi phí và số lượng người thành công.'
+    };
+  }
+};
+module.exports = {
+  handleCreate,
+  handleGetAllByUserId,
+  handleGetItineraryDetail,
+  handleUpdateStatus,
+  handleAddPriceAndGuest
+};
