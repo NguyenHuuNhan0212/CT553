@@ -3,7 +3,8 @@ const {
   getAllItinerariesByUserId,
   getItineraryDetail,
   updateStatus,
-  addPeopleAndPrice
+  addPeopleAndPrice,
+  deleteItinerary
 } = require('../controllers/itineraryController');
 const express = require('express');
 const router = express.Router();
@@ -13,6 +14,7 @@ router
   .get('/my-itinerary', verifyToken, getAllItinerariesByUserId)
   .get('/:itineraryId', getItineraryDetail)
   .patch('/price-people/:itineraryId', verifyToken, addPeopleAndPrice)
-  .patch('/:itineraryId', verifyToken, updateStatus);
+  .patch('/:itineraryId', verifyToken, updateStatus)
+  .delete('/:itineraryId', verifyToken, deleteItinerary);
 
 module.exports = router;

@@ -19,7 +19,8 @@ const itinerarySchema = new mongoose.Schema(
     people: { type: Number },
     priceForItinerary: { type: Number },
     startDate: { type: Date, required: true },
-    endDate: { type: Date, required: true }
+    endDate: { type: Date, required: true },
+    deleted: { type: Boolean, default: false }
   },
   { timestamps: true }
 );

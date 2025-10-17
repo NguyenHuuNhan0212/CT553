@@ -35,7 +35,7 @@ const handleCreate = async (userId, data) => {
 };
 
 const handleGetAllByUserId = async (userId) => {
-  const itineraries = await ItineraryModel.find({ userId })
+  const itineraries = await ItineraryModel.find({ userId, deleted: false })
     .lean()
     .sort({ createdAt: -1 });
   return {
@@ -116,10 +116,35 @@ const handleAddPriceAndGuest = async (userId, itineraryId, data) => {
     };
   }
 };
+
+const handleDeleteItinerary = async (userId, itineraryId) => {
+  const itinerary = await ItineraryModel.findOne({
+    userId,
+    _id: itineraryId,
+    deleted: false
+  }).lean();
+  if (!itinerary) {
+    throw new Error('Không tìm thấy lịch trình.');
+  } else {
+    const isTrue = itinerary.status === 'upcoming' ? true : false;
+    if (isTrue) {
+      await ItineraryModel.findByIdAndDelete(itinerary._id);
+      await ItineraryDetailModel.deleteMany({ itineraryId });
+    } else {
+      await ItineraryModel.findByIdAndUpdate(itinerary._id, {
+        deleted: true
+      });
+    }
+    return {
+      message: 'Xóa lịch trình thành công.'
+    };
+  }
+};
 module.exports = {
   handleCreate,
   handleGetAllByUserId,
   handleGetItineraryDetail,
   handleUpdateStatus,
-  handleAddPriceAndGuest
+  handleAddPriceAndGuest,
+  handleDeleteItinerary
 };
