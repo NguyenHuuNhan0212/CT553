@@ -48,14 +48,39 @@ const handleGetItineraryDetail = async (itineraryId) => {
   if (!itinerary) {
     throw new Error('Lịch trình không tồn tại.');
   } else {
-    const itineraryDetail = await ItineraryDetailModel.find({
-      itineraryId
-    })
+    const itineraryDetails = await ItineraryDetailModel.find({ itineraryId })
       .sort({ visitDay: 1, order: 1 })
       .populate('placeId');
+
+    const grouped = {};
+
+    for (const detail of itineraryDetails) {
+      const day = detail.visitDay;
+
+      if (!grouped[day]) {
+        grouped[day] = [];
+      }
+
+      grouped[day].push(detail);
+    }
+
+    // Bước 3: Chuyển về dạng mảng dễ dùng ở frontend
+    const result = Object.entries(grouped).map(([day, items]) => ({
+      day: `Ngày ${day}`,
+      places: items.map((d) => ({
+        placeId: d.placeId,
+        images: d.placeId?.images,
+        name: d.placeId?.name,
+        address: d.placeId?.address,
+        duration: `${d.startTime || 'Thời gian bắt đầu'} - ${
+          d.endTime || 'Thời gian kết thúc'
+        }`,
+        note: d.note
+      }))
+    }));
     return {
       itinerary,
-      itineraryDetail
+      itineraryDetail: result
     };
   }
 };
