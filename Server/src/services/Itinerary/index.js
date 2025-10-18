@@ -44,7 +44,7 @@ const handleGetAllByUserId = async (userId) => {
 };
 
 const handleGetItineraryDetail = async (itineraryId) => {
-  const itinerary = await ItineraryModel.findById(itineraryId);
+  const itinerary = await ItineraryModel.findById(itineraryId).lean();
   if (!itinerary) {
     throw new Error('Lịch trình không tồn tại.');
   } else {
@@ -79,7 +79,7 @@ const handleGetItineraryDetail = async (itineraryId) => {
       }))
     }));
     return {
-      itinerary,
+      ...itinerary,
       itineraryDetail: result
     };
   }
@@ -140,11 +140,17 @@ const handleDeleteItinerary = async (userId, itineraryId) => {
     };
   }
 };
+
+const handleGetAllItineraryTemplate = async () => {
+  const itineraries = await ItineraryModel.find({ status: 'completed' });
+  return itineraries;
+};
 module.exports = {
   handleCreate,
   handleGetAllByUserId,
   handleGetItineraryDetail,
   handleUpdateStatus,
   handleAddPriceAndGuest,
-  handleDeleteItinerary
+  handleDeleteItinerary,
+  handleGetAllItineraryTemplate
 };

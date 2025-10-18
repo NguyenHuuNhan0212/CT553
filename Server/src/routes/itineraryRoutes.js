@@ -4,13 +4,15 @@ const {
   getItineraryDetail,
   updateStatus,
   addPeopleAndPrice,
-  deleteItinerary
+  deleteItinerary,
+  getAllItineraryTemplate
 } = require('../controllers/itineraryController');
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middlewares/authMiddleware');
 router
   .post('/', verifyToken, createItinerary)
+  .get('/template', getAllItineraryTemplate)
   .get('/my-itinerary', verifyToken, getAllItinerariesByUserId)
   .get('/:itineraryId', getItineraryDetail)
   .patch('/price-people/:itineraryId', verifyToken, addPeopleAndPrice)
