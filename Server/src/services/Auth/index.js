@@ -11,9 +11,13 @@ const {
 } = require('../../utils/generateToken.js');
 const register = async (data) => {
   if (data.email && data.password && data.fullName && data.phone) {
-    const existingUser = await UserModel.findOne({ email: data.email });
-    if (existingUser) {
+    const existingUserEmail = await UserModel.findOne({ email: data.email });
+    if (existingUserEmail) {
       throw new Error('Email đã đăng ký tài khoản.');
+    }
+    const existingUserPhone = await UserModel.findOne({ phone: data.phone });
+    if (existingUserPhone) {
+      throw new Error('Số điện thoại đã đăng ký tài khoản.');
     }
     const passwordHash = await bcrypt.hash(data.password, 10);
     data.password = passwordHash;
