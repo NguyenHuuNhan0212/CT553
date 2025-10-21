@@ -7,6 +7,14 @@ const handleCreate = async (userId, data) => {
   const start = new Date(startDate);
   const end = new Date(endDate);
   const numDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+  const itineraryCheck = await ItineraryModel.findOne({
+    userId,
+    startDate: { $lte: endDate },
+    endDate: { $gte: startDate }
+  });
+  if (itineraryCheck) {
+    throw new Error('Đã có lịch trình trong khoảng thời gian này.');
+  }
   const itinerary = await ItineraryModel.create({
     userId,
     title,
@@ -145,6 +153,50 @@ const handleGetAllItineraryTemplate = async () => {
   const itineraries = await ItineraryModel.find({ status: 'completed' });
   return itineraries;
 };
+
+const handleUpdateItinerary = async (userId, itineraryId, data) => {
+  const { title, destination, startDate, creatorName, endDate, details } = data;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const numDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+  const itineraryCheck = await ItineraryModel.findOne({
+    userId,
+    _id: { $ne: itineraryId },
+    startDate: { $lte: endDate },
+    endDate: { $gte: startDate }
+  });
+  if (itineraryCheck) {
+    throw new Error('Đã có lịch trình trong khoảng thời gian này.');
+  }
+  const itinerary = await ItineraryModel.findOneAndUpdate(
+    { userId, _id: itineraryId },
+    {
+      title,
+      destination,
+      numDays,
+      creatorName,
+      startDate,
+      endDate
+    }
+  );
+  if (!itinerary) throw new Error('Không có quyền cập nhật lịch trình.');
+  await ItineraryDetailModel.deleteMany({ itineraryId: itineraryId });
+  if (details && details.length > 0) {
+    const detailDocs = details.map((d) => ({
+      itineraryId: itineraryId,
+      placeId: d.placeId,
+      visitDay: d.visitDay,
+      note: d.note,
+      startTime: d.startTime,
+      endTime: d.endTime,
+      order: d.order
+    }));
+    await ItineraryDetailModel.insertMany(detailDocs);
+  }
+  return {
+    message: 'Cập nhật lịch trình thành công.'
+  };
+};
 module.exports = {
   handleCreate,
   handleGetAllByUserId,
@@ -152,5 +204,6 @@ module.exports = {
   handleUpdateStatus,
   handleAddPriceAndGuest,
   handleDeleteItinerary,
-  handleGetAllItineraryTemplate
+  handleGetAllItineraryTemplate,
+  handleUpdateItinerary
 };

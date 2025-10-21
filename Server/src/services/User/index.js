@@ -8,7 +8,7 @@ const getMyInfo = async (id) => {
   const user = await UserModel.findById(id, '-password').lean();
   if (user && user.role === 'provider') {
     const ownerInfo = await OwnerModel.findOne({ userId: user._id }).lean();
-    return { ...user, ...ownerInfo };
+    return { ...ownerInfo, ...user };
   } else {
     return user;
   }
