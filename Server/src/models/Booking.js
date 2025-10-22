@@ -30,7 +30,7 @@ const bookingSchema = new mongoose.Schema(
       enum: ['pending', 'confirmed', 'cancelled', 'paid'],
       default: 'pending'
     },
-    isDeleted: { type: Boolean, default: false },
+    deleted: { type: Boolean, default: false },
     bookingDetails: [BookingDetailSchema]
   },
   { timestamps: true }

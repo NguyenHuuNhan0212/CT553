@@ -89,7 +89,7 @@ const createBooking = async (userId, data) => {
 };
 
 const getBookings = async (userId) => {
-  const bookings = await BookingModel.find({ userId, isDeleted: false })
+  const bookings = await BookingModel.find({ userId, deleted: false })
     .populate('placeId', 'name type address')
     .sort({ createdAt: -1 })
     .lean();
@@ -192,12 +192,13 @@ const deleteBookingForUser = async (userId, bookingId) => {
   const booking = await BookingModel.findOne({
     _id: bookingId,
     userId,
-    status: 'cancelled'
+    status: 'cancelled',
+    deleted: false
   });
   if (!booking) {
     throw new Error('Không được phép xóa đơn đặt ở trạng thái này.');
   } else {
-    await BookingModel.findByIdAndUpdate(bookingId, { isDeleted: true });
+    await BookingModel.findByIdAndUpdate(bookingId, { deleted: true });
     return {
       message: 'Xóa booking thành công.'
     };
@@ -281,7 +282,7 @@ const handleDeleteForSupplier = async (bookingId) => {
     const booking = await BookingModel.findOne({
       _id: bookingId,
       status: 'cancelled',
-      isDeleted: true
+      deleted: true
     });
     if (!booking) {
       throw new Error('Không được phép xóa đơn đặt ở trạng thái này.');
@@ -379,6 +380,82 @@ const createInternalBookingForSupplier = async (supplierId, data) => {
   };
 };
 
+const handleGetStats = async (userId) => {
+  const places = await PlaceModel.find({
+    userId,
+    deleted: false,
+    isActive: true,
+    isApprove: true
+  }).lean();
+  if (!places.length) {
+    return {
+      totalRevenue: 0,
+      totalBookings: 0,
+      totalPlaces: 0,
+      revenueByPlace: []
+    };
+  }
+  const placeIds = places.map((p) => p._id);
+
+  const revenueByPlaceAgg = await BookingModel.aggregate([
+    {
+      $match: {
+        placeId: { $in: placeIds },
+        status: 'confirmed',
+        checkOutDate: { $lt: new Date() }
+      }
+    },
+    {
+      $group: {
+        _id: '$placeId',
+        totalRevenue: { $sum: '$totalPrice' },
+        totalBookings: { $sum: 1 }
+      }
+    }
+  ]);
+
+  const revenueByPlace = revenueByPlaceAgg.map((item) => {
+    const place = places.find((p) => p._id.toString() === item._id.toString());
+    return {
+      placeId: item._id,
+      placeName: place?.name || 'Không tìm thấy tên địa điểm',
+      totalRevenue: item.totalRevenue,
+      totalBookings: item.totalBookings
+    };
+  });
+
+  const totalBookings = revenueByPlace.reduce(
+    (acc, curr) => acc + curr.totalBookings,
+    0
+  );
+  const totalRevenue = revenueByPlace.reduce(
+    (acc, curr) => acc + curr.totalRevenue,
+    0
+  );
+  const result = {
+    totalPlaces: places.length,
+    totalRevenue,
+    totalBookings,
+    revenueByPlace
+  };
+  return result;
+};
+
+const handleCancelBookingForSupplier = async (userId, bookingId) => {
+  const booking = await BookingModel.findOne({
+    _id: bookingId,
+    checkInDate: { $lte: new Date() }
+  })
+    .lean()
+    .populate('placeId');
+  if (booking.placeId?.userId.toString() !== userId.toString()) {
+    throw new Error('Không có quyền cập nhật trạng thái đơn đặt.');
+  }
+  await BookingModel.findByIdAndUpdate(booking._id, { status: 'cancelled' });
+  return {
+    message: 'Hủy đơn của người dùng thành công.'
+  };
+};
 module.exports = {
   createBooking,
   getBookings,
@@ -388,5 +465,7 @@ module.exports = {
   getServiceBookingForPlace,
   handleDeleteForSupplier,
   handleConfirmPayment,
-  createInternalBookingForSupplier
+  createInternalBookingForSupplier,
+  handleGetStats,
+  handleCancelBookingForSupplier
 };

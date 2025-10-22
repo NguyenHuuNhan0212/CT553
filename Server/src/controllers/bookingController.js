@@ -7,7 +7,9 @@ const {
   getServiceBookingForPlace,
   handleDeleteForSupplier,
   handleConfirmPayment,
-  createInternalBookingForSupplier
+  createInternalBookingForSupplier,
+  handleGetStats,
+  handleCancelBookingForSupplier
 } = require('../services/Booking');
 
 const createBookingController = async (req, res) => {
@@ -103,6 +105,30 @@ const confirmPayment = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const getStats = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const result = await handleGetStats(userId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const cancelBookingForSupplier = async (req, res) => {
+  try {
+    const { userId, role } = req.user;
+    const { bookingId } = req.params;
+    if (role !== 'provider') {
+      res.status(401).json({ message: 'Không phải nhà cung cấp' });
+    }
+    const result = await handleCancelBookingForSupplier(userId, bookingId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   createBookingController,
   getBookingsController,
@@ -112,5 +138,7 @@ module.exports = {
   getServiceBookingsBySupplierId,
   deleteBookingForSupplier,
   confirmPayment,
-  createInternalBookingController
+  createInternalBookingController,
+  getStats,
+  cancelBookingForSupplier
 };
