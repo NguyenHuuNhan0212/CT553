@@ -8,9 +8,13 @@ const {
   deleteBookingForSupplier,
   confirmPayment,
   createInternalBookingController,
-  getStats,
   cancelBookingForSupplier
 } = require('../controllers/bookingController');
+
+const {
+  getStats,
+  getStatsByLocation
+} = require('../controllers/statsController');
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middlewares/authMiddleware');
@@ -18,6 +22,7 @@ router
   .post('/internal', verifyToken, createInternalBookingController)
   .post('/', verifyToken, createBookingController)
   .get('/stats', verifyToken, getStats)
+  .get('/revenue/by-location', verifyToken, getStatsByLocation)
   .get('/supplier', verifyToken, getServiceBookingsBySupplierId)
   .get('/:bookingId', verifyToken, getBookingById)
   .get('/', verifyToken, getBookingsController)

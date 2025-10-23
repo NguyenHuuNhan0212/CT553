@@ -380,67 +380,6 @@ const createInternalBookingForSupplier = async (supplierId, data) => {
   };
 };
 
-const handleGetStats = async (userId) => {
-  const places = await PlaceModel.find({
-    userId,
-    deleted: false,
-    isActive: true,
-    isApprove: true
-  }).lean();
-  if (!places.length) {
-    return {
-      totalRevenue: 0,
-      totalBookings: 0,
-      totalPlaces: 0,
-      revenueByPlace: []
-    };
-  }
-  const placeIds = places.map((p) => p._id);
-
-  const revenueByPlaceAgg = await BookingModel.aggregate([
-    {
-      $match: {
-        placeId: { $in: placeIds },
-        status: 'confirmed',
-        checkOutDate: { $lt: new Date() }
-      }
-    },
-    {
-      $group: {
-        _id: '$placeId',
-        totalRevenue: { $sum: '$totalPrice' },
-        totalBookings: { $sum: 1 }
-      }
-    }
-  ]);
-
-  const revenueByPlace = revenueByPlaceAgg.map((item) => {
-    const place = places.find((p) => p._id.toString() === item._id.toString());
-    return {
-      placeId: item._id,
-      placeName: place?.name || 'Không tìm thấy tên địa điểm',
-      totalRevenue: item.totalRevenue,
-      totalBookings: item.totalBookings
-    };
-  });
-
-  const totalBookings = revenueByPlace.reduce(
-    (acc, curr) => acc + curr.totalBookings,
-    0
-  );
-  const totalRevenue = revenueByPlace.reduce(
-    (acc, curr) => acc + curr.totalRevenue,
-    0
-  );
-  const result = {
-    totalPlaces: places.length,
-    totalRevenue,
-    totalBookings,
-    revenueByPlace
-  };
-  return result;
-};
-
 const handleCancelBookingForSupplier = async (userId, bookingId) => {
   const booking = await BookingModel.findOne({
     _id: bookingId,
@@ -466,6 +405,5 @@ module.exports = {
   handleDeleteForSupplier,
   handleConfirmPayment,
   createInternalBookingForSupplier,
-  handleGetStats,
   handleCancelBookingForSupplier
 };

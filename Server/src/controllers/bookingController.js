@@ -8,7 +8,6 @@ const {
   handleDeleteForSupplier,
   handleConfirmPayment,
   createInternalBookingForSupplier,
-  handleGetStats,
   handleCancelBookingForSupplier
 } = require('../services/Booking');
 
@@ -106,16 +105,6 @@ const confirmPayment = async (req, res) => {
   }
 };
 
-const getStats = async (req, res) => {
-  try {
-    const { userId } = req.user;
-    const result = await handleGetStats(userId);
-    return res.status(200).json(result);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
 const cancelBookingForSupplier = async (req, res) => {
   try {
     const { userId, role } = req.user;
@@ -139,6 +128,5 @@ module.exports = {
   deleteBookingForSupplier,
   confirmPayment,
   createInternalBookingController,
-  getStats,
   cancelBookingForSupplier
 };
