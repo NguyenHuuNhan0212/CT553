@@ -13,7 +13,8 @@ const {
 
 const {
   getStats,
-  getStatsByLocation
+  getStatsByLocation,
+  getRevenueByDate
 } = require('../controllers/statsController');
 const express = require('express');
 const router = express.Router();
@@ -23,6 +24,7 @@ router
   .post('/', verifyToken, createBookingController)
   .get('/stats', verifyToken, getStats)
   .get('/revenue/by-location', verifyToken, getStatsByLocation)
+  .get('/revenue/by-date', verifyToken, getRevenueByDate)
   .get('/supplier', verifyToken, getServiceBookingsBySupplierId)
   .get('/:bookingId', verifyToken, getBookingById)
   .get('/', verifyToken, getBookingsController)

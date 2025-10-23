@@ -32,6 +32,9 @@ const handleGetStats = async (userId) => {
         totalRevenue: { $sum: '$totalPrice' },
         totalBookings: { $sum: 1 }
       }
+    },
+    {
+      $sort: { totalRevenue: -1 }
     }
   ]);
 
@@ -72,7 +75,7 @@ const handleGetStatsByLocation = async (userId, from, to) => {
 
   const match = {};
   if (from && to) {
-    match.checkInDate = {
+    match.checkOutDate = {
       $gte: new Date(from),
       $lte: new Date(to)
     };
@@ -95,7 +98,7 @@ const handleGetStatsByLocation = async (userId, from, to) => {
     {
       $group: {
         _id: {
-          month: { $month: '$checkInDate' },
+          month: { $month: '$checkOutDate' },
           location: '$placeId'
         },
         totalRevenue: { $sum: '$totalPrice' }
@@ -115,7 +118,55 @@ const handleGetStatsByLocation = async (userId, from, to) => {
   });
   return revenueDataPlaceName;
 };
+
+const handleGetRevenueByDate = async (userId, date) => {
+  const places = await PlaceModel.find({
+    userId,
+    deleted: false,
+    isActive: true,
+    isApprove: true
+  }).lean();
+
+  if (!places.length) return [];
+
+  const match = {
+    status: 'confirmed',
+    placeId: { $in: places.map((p) => p._id) }
+  };
+
+  if (date) {
+    const start = new Date(date);
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+    match.checkOutDate = { $gte: start, $lte: end };
+  } else {
+    match.checkOutDate = {
+      $lt: new Date()
+    };
+  }
+
+  const revenueData = await BookingModel.aggregate([
+    { $match: match },
+    {
+      $group: {
+        _id: '$placeId',
+        totalRevenue: { $sum: '$totalPrice' }
+      }
+    },
+    { $sort: { totalRevenue: -1 } }
+  ]);
+
+  return revenueData.map((r) => {
+    const place = places.find((p) => p._id.toString() === r._id.toString());
+    return {
+      location: place?.name || 'Không xác định',
+      totalRevenue: r.totalRevenue
+    };
+  });
+};
+
 module.exports = {
   handleGetStats,
-  handleGetStatsByLocation
+  handleGetStatsByLocation,
+  handleGetRevenueByDate
 };
