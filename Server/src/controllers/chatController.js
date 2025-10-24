@@ -27,6 +27,7 @@ const ask = async (req, res) => {
 
     let answer = '';
     let tripPlan = null;
+    let cityToUse = null;
     // === 1. Kiểm tra xem user đang trả lời số ngày không ===
     if (/^\d+(\s*ngày)?$/.test(question)) {
       // Tìm message gần nhất của user có awaitingDays = true
@@ -57,6 +58,7 @@ const ask = async (req, res) => {
       return res.json({
         answer,
         tripPlan,
+        city: lastState.city,
         isTripPlan: tripPlan ? true : false
       });
     }
@@ -93,7 +95,7 @@ const ask = async (req, res) => {
     } else if (category === 'other') {
       answer = 'Xin lỗi, tôi chỉ có thể hỗ trợ về du lịch.';
     } else if (category === 'travel') {
-      const cityToUse = await extractCity(question);
+      cityToUse = await extractCity(question);
 
       if (isWeatherQuestion(question)) {
         try {
@@ -200,15 +202,15 @@ const ask = async (req, res) => {
         city: cityToUse
       });
     } else if (category === 'plan_trip') {
-      let city = await extractCity(question);
+      cityToUse = await extractCity(question);
 
       // Nếu không có city trong câu hỏi, lấy từ message gần nhất
-      if (city === 'NULL') {
+      if (cityToUse === 'NULL') {
         const lastCityMsg = await ChatMessage.findOne({
           userId,
           city: { $exists: true, $ne: 'NULL' }
         }).sort({ createdAt: -1 });
-        if (lastCityMsg) city = lastCityMsg.city;
+        if (lastCityMsg) cityToUse = lastCityMsg.city;
       }
 
       const daysMatch = question.match(/(\d+)\s*ngày/);
@@ -223,26 +225,31 @@ const ask = async (req, res) => {
           role: 'assistant',
           content: answer,
           category,
-          city,
+          city: cityToUse,
           awaitingDays: true
         });
       } else {
-        tripPlan = await createTripPlan(city, numDays);
+        tripPlan = await createTripPlan(cityToUse, numDays);
         answer = tripPlan
-          ? await formatTripPlanWithGPT(tripPlan, numDays, city)
-          : `Xin lỗi, hiện tại tôi không có dữ liệu địa điểm ở ${city}.`;
+          ? await formatTripPlanWithGPT(tripPlan, numDays, cityToUse)
+          : `Xin lỗi, hiện tại tôi không có dữ liệu địa điểm ở ${cityToUse}.`;
 
         await ChatMessage.create({
           userId,
           role: 'assistant',
           content: answer,
           category,
-          city
+          city: cityToUse
         });
       }
     }
 
-    res.json({ answer, tripPlan, isTripPlan: tripPlan ? true : false });
+    res.json({
+      answer,
+      tripPlan,
+      city: cityToUse || '',
+      isTripPlan: tripPlan ? true : false
+    });
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: e.message });

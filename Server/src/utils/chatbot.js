@@ -107,6 +107,8 @@ async function createTripPlan(city, numDays = 1) {
         name: p.name,
         address: p.address,
         cost: getAvgCost(p),
+        image: p.images[0],
+        services: p.services,
         type: p.type
       })
     );
@@ -115,9 +117,12 @@ async function createTripPlan(city, numDays = 1) {
     const hotel = hotels.pop() || backupHotels.pop();
     if (hotel) {
       dayPlan.activities.push({
+        placeId: hotel._id,
         name: hotel.name,
         address: hotel.address,
         cost: getAvgCost(hotel),
+        image: hotel.images[0],
+        services: hotel.services,
         type: 'hotel'
       });
     }
@@ -143,6 +148,7 @@ YÊU CẦU RẤT QUAN TRỌNG:
 - Nếu có địa điểm có type là "hotel" → ghi rõ: “🏨 Gợi ý nghỉ đêm tại ...”.
 - Nếu có type là "cafe" → ghi rõ: “☕ ... (Chi phí phụ thuộc vào đồ uống bạn dùng)”.
 - Nếu không có giá → hiển thị “(Miễn phí)”.
+- Không cần hiển thị hình ảnh.
 - Trình bày **ngắn gọn, tự nhiên như đang gợi ý cho khách du lịch**, có tiêu đề rõ ràng ví dụ “Lịch trình 3 ngày ở Cần Thơ”.
 - Tuyệt đối KHÔNG trả về Markdown hay JSON — chỉ trả về HTML.
 `
