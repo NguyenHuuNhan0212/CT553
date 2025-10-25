@@ -1,6 +1,6 @@
 const ChatMessage = require('../models/ChatMessage');
 const Place = require('../models/Place');
-const { chatWithLLM } = require('../services/Chatbot/aiClient');
+const { chatWithLLM } = require('../utils/aiClient');
 const { getWeather } = require('../services/Chatbot/weather');
 const { extractCity } = require('../services/Chatbot/extractCity');
 const {
@@ -9,8 +9,11 @@ const {
   createTripPlan,
   formatTripPlanWithGPT,
   isPlaceListQuestion,
-  getAvgCost
-} = require('../utils/chatbot');
+  getAvgCost,
+  extractPlaceName,
+  getPlaceInfo,
+  formatPlaceInfoWithGPT
+} = require('../services/Chatbot/chatbot');
 
 function isTransportQuestion(question) {
   return /(đi|từ).+(đến).+(bằng|phương tiện|xe|máy bay|tàu)/i.test(question);
@@ -89,8 +92,13 @@ const ask = async (req, res) => {
     }
     // === 2. Phân loại câu hỏi mới ===
     const category = await classifyQuestion(question);
-
-    if (category === 'greeting') {
+    if (category === 'place_info') {
+      const placeName = await extractPlaceName(question);
+      const city = await extractCity(question);
+      const place = await getPlaceInfo(placeName, city);
+      const formatPlaceInfo = await formatPlaceInfoWithGPT(place);
+      answer = `${formatPlaceInfo}`;
+    } else if (category === 'greeting') {
       answer = 'Chào bạn! Tôi có thể giúp bạn về du lịch. 😊';
     } else if (category === 'other') {
       answer = 'Xin lỗi, tôi chỉ có thể hỗ trợ về du lịch.';
@@ -144,8 +152,16 @@ const ask = async (req, res) => {
             foundType || 'địa điểm'
           } ở ${cityToUse}.`;
         } else {
+          const placeType =
+            foundType === 'touristSpot'
+              ? 'Địa điểm du lịch'
+              : foundType === 'cafe'
+              ? 'Quán cafe'
+              : foundType === 'hotel'
+              ? 'Địa điểm lưu trú'
+              : 'Địa điểm ăn uống';
           answer =
-            `Một số ${foundType} nổi bật tại ${cityToUse}:\n` +
+            `Một số ${placeType} nổi bật tại ${cityToUse}:\n` +
             placesWithAvg
               .map(
                 (p, i) =>

@@ -1,4 +1,4 @@
-const { chatWithLLM } = require('./aiClient.js');
+const { chatWithLLM } = require('../../utils/aiClient.js');
 
 async function extractCity(question) {
   const systemPrompt = {

@@ -1,5 +1,5 @@
-const { chatWithLLM } = require('../services/Chatbot/aiClient');
-const Place = require('../models/Place');
+const { chatWithLLM } = require('../../utils/aiClient');
+const Place = require('../../models/Place');
 // Phân loại intent
 async function classifyQuestion(question) {
   const systemPrompt = {
@@ -10,17 +10,53 @@ Phân loại câu hỏi người dùng thành 4 loại:
 1. greeting → câu chào
 2. travel → câu hỏi liên quan du lịch (địa điểm, thời tiết, khách sạn, ăn uống, phương tiện, lịch trình, chi phí...)
 3. plan_trip →  yêu cầu tạo lịch trình du lịch (ví dụ: "lập kế hoạch đi Cần Thơ 2 ngày 1 đêm")
-4. other → các câu hỏi khác ngoài du lịch
-Trả về duy nhất 1 từ: greeting, travel, plan_trip, other
+4. place_info →  yêu cầu xem thông tin chi tiết của 1 địa điểm (ví dụ: "cho tôi xem thông tin của bến ninh kiều")
+5. other → các câu hỏi khác ngoài du lịch
+Trả về duy nhất 1 từ: greeting, travel, plan_trip, place_info, other
 `
   };
   const userMessage = { role: 'user', content: question };
   const response = await chatWithLLM([systemPrompt, userMessage]);
   const category = response.trim().toLowerCase();
-  if (['greeting', 'travel', 'plan_trip', 'other'].includes(category))
+  if (
+    ['greeting', 'travel', 'plan_trip', 'place_info', 'other'].includes(
+      category
+    )
+  )
     return category;
   return 'other';
 }
+
+// Lấy tên địa điểm
+
+async function extractPlaceName(message) {
+  const prompt = `
+Bạn là một bộ trích xuất thông tin.
+Nhiệm vụ của bạn là tìm **tên địa điểm du lịch, khu nghỉ dưỡng, nhà hàng, quán ăn, khách sạn hoặc địa danh** trong câu sau.
+Chỉ trả về JSON ở dạng sau, không giải thích thêm:
+{"place": "<tên địa điểm (NẾU CÓ TỪ QUÁN Ở ĐẦU THÌ LOẠI BỎ TỪ QUÁN) hoặc null nếu không có>"}
+
+Câu: "${message}"
+`;
+
+  try {
+    const responseText = await chatWithLLM([
+      {
+        role: 'system',
+        content: 'Bạn là trợ lý AI chuyên trích xuất tên địa điểm.'
+      },
+      { role: 'user', content: prompt }
+    ]);
+
+    const json = JSON.parse(responseText.trim());
+    return json.place || null;
+  } catch (error) {
+    console.error('Lỗi khi trích xuất địa điểm:', error.message);
+    return null;
+  }
+}
+
+module.exports = { extractPlaceName };
 
 // Kiểm tra câu hỏi về thời tiết
 function isWeatherQuestion(question) {
@@ -69,7 +105,10 @@ const getAvgCost = (place) => {
 };
 async function createTripPlan(city, numDays = 1) {
   const places = await Place.find({
-    address: { $regex: city, $options: 'i' }
+    address: { $regex: city, $options: 'i' },
+    isActive: true,
+    deleted: false,
+    isApprove: true
   });
 
   if (!places.length) return null;
@@ -185,11 +224,83 @@ function isPlaceListQuestion(question) {
   );
 }
 
+async function getPlaceInfo(placeName, address) {
+  let place;
+  if (!address) {
+    place = await Place.findOne({
+      name: { $regex: placeName, $options: 'i' },
+      isActive: true,
+      deleted: false,
+      isApprove: true
+    }).lean();
+  } else {
+    place = await Place.findOne({
+      name: { $regex: placeName, $options: 'i' },
+      address: { $regex: address, $options: 'i' },
+      isActive: true,
+      deleted: false,
+      isApprove: true
+    }).lean();
+  }
+  return place ? place : null;
+}
+async function formatPlaceInfoWithGPT(place) {
+  if (!place) return 'Không có thông tin địa điểm.';
+
+  const prompt = `
+Bạn là trợ lý AI chuyên viết mô tả du lịch ngắn gọn, thân thiện, và trả về KHOẢNG HTML hoàn chỉnh (a fragment) để hiển thị trực tiếp trên web.
+**QUY TẮC RẤT QUAN TRỌNG — CHỈ TRẢ VỀ HTML:**
+1. Chỉ trả về HTML (KHÔNG có lời giải thích, không có JSON, không có text ngoài HTML).  
+2. HTML phải bao gồm thẻ <h2> cho tiêu đề, <h3> cho phần phụ (ví dụ: Địa chỉ), và <ul>/<li> để liệt kê dịch vụ.  
+3. Sử dụng emoji du lịch thích hợp (ví dụ: 🌿, 🍽️, 🏖️, 🚤, 🏨) trong tiêu đề và danh sách.  
+4. Loại bỏ bất kỳ tag HTML thô trong field description (nếu description chứa HTML, hãy chuyển nó thành text plain, giữ các đoạn ngắt dòng).  
+5. Không thêm thông tin mới ngoài dữ liệu trong "Dữ liệu JSON" dưới đây. Nếu thiếu thông tin (vd: tỉnh), bỏ phần đó hoặc để trống.  
+6. Sử dụng ngôn ngữ: tiếng Việt tự nhiên, ngắn gọn, thân thiện, độ dài ~6-12 câu + 1 list dịch vụ.
+
+**Định dạng HTML mong muốn (ví dụ mẫu, trả về tuyệt đối giống cấu trúc này):**
+<section class="place-card">
+  <h2>🌿 Tên địa điểm (Tỉnh/Thành phố)</h2>
+  <h3>📍 Địa chỉ</h3>
+  <p>...mô tả ngắn gọn, loại bỏ HTML, tối đa 2-3 câu...</p>
+  <h3>🛎️ Dịch vụ & Giá</h3>
+  <ul>
+    <li>Vé vào cổng (Người lớn): 70.000 đ</li>
+    <li>Vé vào cổng (Trẻ em): 30.000 đ</li>
+    ...
+  </ul>
+</section>
+
+**Bắt buộc:** trả về **CHỈ** đoạn HTML fragment như ví dụ trên — không thêm bất kỳ chú thích hoặc dấu ngoặc code nào.
+
+Dữ liệu JSON:
+${JSON.stringify(place, null, 2)}
+`;
+
+  try {
+    const response = await chatWithLLM([
+      {
+        role: 'system',
+        content:
+          'Bạn là chuyên gia viết mô tả du lịch ngắn gọn, sinh động và chuẩn tiếng Việt.'
+      },
+      { role: 'user', content: prompt }
+    ]);
+
+    return response.trim();
+  } catch (error) {
+    console.error('❌ Lỗi khi format địa điểm:', error.message);
+    return 'Không thể định dạng thông tin địa điểm.';
+  }
+}
+
 module.exports = {
   classifyQuestion,
   isWeatherQuestion,
   createTripPlan,
   formatTripPlanWithGPT,
   isPlaceListQuestion,
-  getAvgCost
+  getAvgCost,
+  extractPlaceName,
+  getPlaceInfo,
+  formatPlaceInfoWithGPT
 };
