@@ -8,10 +8,14 @@ const {
   getAllItineraryTemplate,
   updateItinerary
 } = require('../controllers/itineraryController');
+const {
+  generateTripPlanController
+} = require('../controllers/tripPlanController');
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middlewares/authMiddleware');
 router
+  .post('/trip-plan', generateTripPlanController)
   .post('/', verifyToken, createItinerary)
   .get('/template', getAllItineraryTemplate)
   .get('/my-itinerary', verifyToken, getAllItinerariesByUserId)

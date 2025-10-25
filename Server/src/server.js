@@ -6,7 +6,6 @@ const connectDB = require('./config/db');
 const chatRoutes = require('./routes/chatRoutes');
 const authRoute = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
-const tripPlanRoutes = require('./routes/tripPlanRoutes');
 const placeRoutes = require('./routes/placeRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
@@ -25,7 +24,6 @@ app.get('/health', (_, res) => res.json({ ok: true }));
 
 app.use('/api/chat', chatRoutes);
 app.use('/api/auth', authRoute);
-app.use('/api/trip-plans', tripPlanRoutes);
 app.use('/api', userRoutes);
 app.use('/api/places', placeRoutes);
 app.use('/api/bookings', bookingRoutes);
