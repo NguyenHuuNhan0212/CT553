@@ -11,6 +11,7 @@ async function generateTripPlan(data) {
 
   if (dayjs(endDate).isBefore(dayjs(startDate)))
     throw new Error('Ngày kết thúc phải sau ngày bắt đầu.');
+  const numDays = dayjs(endDate).diff(dayjs(startDate), 'day') + 1;
 
   // 1️⃣ Lấy danh sách địa điểm tại thành phố
   const places = await PlaceModel.find({
@@ -38,7 +39,7 @@ Bạn là chuyên gia du lịch thông minh.
 
 Người dùng muốn du lịch tại **${city}**
 - Thời gian: ${startDate} → ${endDate}
-
+- Số lượng ngày: ${numDays}
 Dưới đây là danh sách địa điểm (kèm mã code):
 ${placeMap
   .map(
