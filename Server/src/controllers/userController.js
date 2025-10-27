@@ -1,19 +1,13 @@
 const {
-  getAllUsers,
   getMyInfo,
   uploadAvatarService,
   uploadProfile,
   changePassword,
-  upgradeToProvider
+  upgradeToProvider,
+  handleGetStatsUser,
+  handleGetAllAccountUpgradeProvider
 } = require('../services/User');
-const getUsers = async (req, res) => {
-  try {
-    const users = await getAllUsers();
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+
 const getMyProfile = async (req, res) => {
   try {
     const id = req.user.userId;
@@ -69,11 +63,30 @@ const upgradeToProviderController = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+const getStatsUser = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const result = await handleGetStatsUser(role);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+const getAllAccountAwaitConfirm = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const result = await handleGetAllAccountUpgradeProvider(role);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
-  getUsers,
   getMyProfile,
   uploadAvatar,
   uploadProfileController,
   changePass,
-  upgradeToProviderController
+  upgradeToProviderController,
+  getStatsUser,
+  getAllAccountAwaitConfirm
 };

@@ -12,7 +12,6 @@ async function generateTripPlan(data) {
   if (dayjs(endDate).isBefore(dayjs(startDate)))
     throw new Error('Ngày kết thúc phải sau ngày bắt đầu.');
   const numDays = dayjs(endDate).diff(dayjs(startDate), 'day') + 1;
-
   // 1️⃣ Lấy danh sách địa điểm tại thành phố
   const places = await PlaceModel.find({
     address: { $regex: city, $options: 'i' },
@@ -39,7 +38,8 @@ Bạn là chuyên gia du lịch thông minh.
 
 Người dùng muốn du lịch tại **${city}**
 - Thời gian: ${startDate} → ${endDate}
-- Số lượng ngày: ${numDays}
+- Tổng số ngày chính xác: ${numDays} ngày
+- Nếu chỉ có 1 ngày, chỉ tạo lịch trình cho đúng 1 ngày duy nhất, KHÔNG được thêm ngày khác.
 Dưới đây là danh sách địa điểm (kèm mã code):
 ${placeMap
   .map(
@@ -57,7 +57,8 @@ Yêu cầu:
 3. Mỗi ngày phải có **từ 4 đến 6 hoạt động**, các ngày số lượng địa điểm nên khác nhau, chia theo thời gian trong ngày:
    Buổi sáng, Trưa, Chiều, Tối (có thể thêm Sáng sớm hoặc Đêm nếu hợp lý).
 4. Ưu tiên địa điểm đa dạng, nổi bật và gần nhau về vị trí.
-5. Trả về JSON **hợp lệ duy nhất**, không markdown, không giải thích, theo mẫu:
+5.  Trả về kế hoạch **chính xác ${numDays} phần tử (ngày)**, không nhiều hơn.
+6. Trả về JSON **hợp lệ duy nhất**, không markdown, không giải thích, theo mẫu:
 [
   {
     "day": 1,

@@ -10,7 +10,9 @@ const {
   getHotelsNearPlace,
   getPlacesByAddressAndType,
   getPlacesPopularByType,
-  getPlacesPopular
+  getPlacesPopular,
+  handleGetStatsPlace,
+  handleGetPlacesAwaitConfirm
 } = require('../services/Place');
 
 const {
@@ -182,6 +184,26 @@ const getPlacesFavorite = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const getStatsPlace = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const result = await handleGetStatsPlace(role);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getPlacesAwaitConfirm = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const result = await handleGetPlacesAwaitConfirm(role);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   addPlace,
   getInfoOnePlace,
@@ -195,5 +217,7 @@ module.exports = {
   getPlacesPopularController,
   addPlaceFavorite,
   removePlaceFavorite,
-  getPlacesFavorite
+  getPlacesFavorite,
+  getStatsPlace,
+  getPlacesAwaitConfirm
 };

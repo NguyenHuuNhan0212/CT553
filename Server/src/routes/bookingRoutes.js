@@ -15,7 +15,7 @@ const {
   getStats,
   getStatsByLocation,
   getRevenueByDate
-} = require('../controllers/statsController');
+} = require('../controllers/statsBookingForProviderController');
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middlewares/authMiddleware');

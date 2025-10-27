@@ -11,7 +11,9 @@ const {
   getPlacesPopularController,
   addPlaceFavorite,
   removePlaceFavorite,
-  getPlacesFavorite
+  getPlacesFavorite,
+  getStatsPlace,
+  getPlacesAwaitConfirm
 } = require('../controllers/placeController');
 const {
   getSearchHotels,
@@ -31,6 +33,8 @@ router
   .get('/relative', getPlaceRelativeByTypeAndAddress)
   .get('/popular', getPlacesPopularController)
   .get('/favorite', verifyToken, getPlacesFavorite)
+  .get('/stats', verifyToken, getStatsPlace)
+  .get('/await-approve', verifyToken, getPlacesAwaitConfirm)
   .get('/:placeId', getInfoOnePlace)
   .get('/', getAll)
   .patch('/update-status-active/:placeId', verifyToken, updateStatusActive)

@@ -2,7 +2,7 @@ const {
   handleGetStats,
   handleGetStatsByLocation,
   handleGetRevenueByDate
-} = require('../services/Stats/index');
+} = require('../services/StatsForProvider/index');
 
 const getStats = async (req, res) => {
   try {

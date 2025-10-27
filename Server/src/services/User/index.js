@@ -1,9 +1,6 @@
 const bcrypt = require('bcryptjs');
 const UserModel = require('../../models/User');
 const OwnerModel = require('../../models/Supplier');
-const getAllUsers = async () => {
-  return await UserModel.find({}, '-password');
-};
 const getMyInfo = async (id) => {
   const user = await UserModel.findById(id, '-password').lean();
   if (user && user.role === 'provider') {
@@ -111,11 +108,52 @@ const upgradeToProvider = async (id, data) => {
     };
   }
 };
+const handleGetStatsUser = async (role) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền.');
+  }
+  const users = await UserModel.find({ role: { $ne: 'admin' } }).lean();
+  const userGroupByRole = await UserModel.aggregate([
+    {
+      $match: {
+        role: { $ne: 'admin' }
+      }
+    },
+    {
+      $group: {
+        _id: '$role',
+        totalUser: { $sum: 1 }
+      }
+    }
+  ]);
+  return {
+    totalUser: users?.length || 0,
+    userGroupByRole
+  };
+};
+
+const handleGetAllAccountUpgradeProvider = async (role) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền.');
+  }
+  const users = await UserModel.find({ role: 'user' });
+  const userIds = users.map((u) => u._id);
+  const userUpgradeToProviders = await OwnerModel.aggregate([
+    {
+      $match: { userId: { $in: userIds } }
+    }
+  ]);
+  return {
+    total: userUpgradeToProviders.length || 0,
+    userUpgradeToProviders
+  };
+};
 module.exports = {
-  getAllUsers,
   getMyInfo,
   uploadAvatarService,
   uploadProfile,
   changePassword,
-  upgradeToProvider
+  upgradeToProvider,
+  handleGetStatsUser,
+  handleGetAllAccountUpgradeProvider
 };

@@ -1,19 +1,22 @@
 const {
-  getUsers,
   getMyProfile,
   uploadAvatar,
   uploadProfileController,
   changePass,
-  upgradeToProviderController
+  upgradeToProviderController,
+  getStatsUser,
+  getAllAccountAwaitConfirm
 } = require('../controllers/userController.js');
 const upload = require('../middlewares/upload.js');
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middlewares/authMiddleware.js');
-router.get('/users', getUsers);
-router.get('/my-profile', verifyToken, getMyProfile);
-router.post('/avatar', verifyToken, upload.single('avatar'), uploadAvatar);
-router.patch('/update-profile', verifyToken, uploadProfileController);
-router.post('/change-password', verifyToken, changePass);
-router.post('/upgrade-to-provider', verifyToken, upgradeToProviderController);
+router
+  .get('/users/upgrade', verifyToken, getAllAccountAwaitConfirm)
+  .get('/my-profile', verifyToken, getMyProfile)
+  .get('/users/stats', verifyToken, getStatsUser)
+  .post('/avatar', verifyToken, upload.single('avatar'), uploadAvatar)
+  .patch('/update-profile', verifyToken, uploadProfileController)
+  .post('/change-password', verifyToken, changePass)
+  .post('/upgrade-to-provider', verifyToken, upgradeToProviderController);
 module.exports = router;

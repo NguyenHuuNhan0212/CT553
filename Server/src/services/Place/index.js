@@ -135,8 +135,11 @@ const getAllPlaceOfUser = async (userId) => {
 const removePlace = async (userId, placeId) => {
   const place = await PlaceModel.findOne({ userId, _id: placeId });
   if (!place) throw new Error('Địa điểm không tồn tại');
-
-  await PlaceModel.findByIdAndUpdate(placeId, { deleted: true });
+  if (!place.isApprove) {
+    await PlaceModel.findByIdAndDelete(place._id);
+    return;
+  }
+  await PlaceModel.findByIdAndUpdate(place._id, { deleted: true });
   return { message: 'Xóa địa điểm thành công' };
 };
 
@@ -259,6 +262,34 @@ const getPlacesPopular = async () => {
   return popularPlaces;
 };
 
+const handleGetStatsPlace = async (role) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền.');
+  }
+  const places = await PlaceModel.find();
+  const placesGroupType = await PlaceModel.aggregate([
+    {
+      $group: {
+        _id: '$type',
+        totalPlace: { $sum: 1 }
+      }
+    }
+  ]);
+  return {
+    totalPlace: places.length || 0,
+    placesGroupType
+  };
+};
+const handleGetPlacesAwaitConfirm = async (role) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền');
+  }
+  const places = await PlaceModel.find({ isApprove: false }).lean();
+  return {
+    total: places.length || 0,
+    places
+  };
+};
 module.exports = {
   addPlaceService,
   getOnePlace,
@@ -271,5 +302,7 @@ module.exports = {
   getHotelsNearPlace,
   getPlacesByAddressAndType,
   getPlacesPopularByType,
-  getPlacesPopular
+  getPlacesPopular,
+  handleGetStatsPlace,
+  handleGetPlacesAwaitConfirm
 };
