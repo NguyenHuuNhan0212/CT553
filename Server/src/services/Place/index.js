@@ -1,6 +1,7 @@
 const PlaceModel = require('../../models/Place');
 const OwnerInfo = require('../../models/Supplier');
 const BookingModel = require('../../models/Booking');
+const { sendMail } = require('../../utils/nodemailer');
 const addPlaceService = async (userId, data) => {
   const { type, name, address, images, description, services, hotelDetail } =
     data;
@@ -299,7 +300,10 @@ const handleApprovePlace = async (role, placeId) => {
     throw new Error('Không có quyền phê duyệt địa điểm.');
   }
 
-  const place = await PlaceModel.findOne({ _id: placeId, isApprove: false });
+  const place = await PlaceModel.findOne({
+    _id: placeId,
+    isApprove: false
+  }).populate('userId', 'email fullName');
   if (!place) {
     throw new Error('Địa điểm không tồn tại hoặc đã được phê duyệt.');
   }
@@ -312,7 +316,24 @@ const handleApprovePlace = async (role, placeId) => {
     isApprove: true,
     updatedAt: new Date()
   });
-
+  sendMail({
+    to: place.userId?.email,
+    subject: 'Địa điểm của bạn đã được phê duyệt!',
+    text: `Xin chào ${place.userId?.fullName}, địa điểm "${place.name}" của bạn đã được admin phê duyệt thành công.`,
+    html: `
+    <div style="font-family: Arial; padding: 10px;">
+      <h2> Xin chào ${place.userId?.fullName},</h2>
+      <p>Địa điểm <b>${place.name}</b> của bạn đã được <span style="color:green;">phê duyệt thành công</span>!</p>
+      <p>Bạn có thể đăng nhập để truy cập trang quản lý để cập nhật thêm thông tin.</p>
+      <a href="http://localhost:5173/login" 
+         style="background:#007bff;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">
+          Đi đến trang đăng nhập
+      </a>
+      <br><br>
+      <p>Trân trọng,<br>Đội ngũ Vigo Travel</p>
+    </div>
+  `
+  });
   return { message: 'Phê duyệt địa điểm thành công.' };
 };
 
@@ -329,7 +350,10 @@ const handleRejectPlace = async (role, placeId) => {
     throw new Error('Không có quyền phê duyệt địa điểm.');
   }
 
-  const place = await PlaceModel.findOne({ _id: placeId, isApprove: false });
+  const place = await PlaceModel.findOne({
+    _id: placeId,
+    isApprove: false
+  }).populate('userId', 'email fullName');
   if (!place) {
     throw new Error('Địa điểm không tồn tại hoặc đã được phê duyệt.');
   }
@@ -342,7 +366,24 @@ const handleRejectPlace = async (role, placeId) => {
     isApprove: false,
     updatedAt: new Date()
   });
-
+  sendMail({
+    to: place.userId?.email,
+    subject: 'Địa điểm của bạn đã bị từ chối phê duyệt!',
+    text: `Xin chào ${place.userId?.fullName}, địa điểm "${place.name}" của bạn đã  bị admin từ chối phê duyệt vì lý do nào đó.`,
+    html: `
+    <div style="font-family: Arial; padding: 10px;">
+      <h2> Xin chào ${place.userId?.fullName},</h2>
+      <p>Địa điểm <b>${place.name}</b> của bạn đã bị <span style="color:red;">từ chối phê duyệt.</span>!</p>
+      <p>Bạn có thể đăng nhập để truy cập trang quản lý để cập nhật thêm thông tin.</p>
+      <a href="http://localhost:5173/login" 
+         style="background:#007bff;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">
+          Đi đến trang đăng nhập
+      </a>
+      <br><br>
+      <p>Trân trọng,<br>Đội ngũ Vigo Travel</p>
+    </div>
+  `
+  });
   return { message: 'Từ chối địa điểm thành công.' };
 };
 module.exports = {

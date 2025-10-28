@@ -31,7 +31,7 @@ const uploadProfile = async (id, data) => {
 
   const checkPhone = await UserModel.findOne({
     phone: data.phone,
-    userId: { $ne: user._id }
+    _id: { $ne: user._id }
   });
 
   if (checkPhone) {
@@ -134,20 +134,47 @@ const handleGetStatsUser = async (role) => {
 
 const handleGetAllAccountUpgradeProvider = async (role) => {
   if (role !== 'admin') {
-    throw new Error('Không có quyền.');
+    throw new Error('Bạn không có quyền truy cập.');
   }
-  const users = await UserModel.find({ role: 'user' });
-  const userIds = users.map((u) => u._id);
-  const userUpgradeToProviders = await OwnerModel.aggregate([
-    {
-      $match: { userId: { $in: userIds } }
+
+  const users = await UserModel.find({ role: 'user' })
+    .select('_id fullName email phone createdAt')
+    .lean();
+
+  const owners = await OwnerModel.find({
+    isApprove: false,
+    $expr: { $eq: ['$createdAt', '$updatedAt'] }
+  })
+    .select('userId bankName bankAccount createdAt')
+    .populate('userId', '_id fullName email phone createdAt')
+    .lean();
+
+  const mergedList = owners.map((owner) => {
+    const user = users.find(
+      (u) => u._id.toString() === owner.userId._id.toString()
+    );
+    if (user) {
+      return {
+        _id: user?._id,
+        fullName: user?.fullName,
+        email: user?.email,
+        phone: user?.phone,
+        registerDate: user?.createdAt,
+        bankName: owner.bankName,
+        bankAccount: owner.bankAccount,
+        upgradeDate: owner.createdAt
+      };
+    } else {
+      return null;
     }
-  ]);
+  });
+  const total = mergedList.length ? mergedList.filter((m) => m !== null) : [];
   return {
-    total: userUpgradeToProviders.length || 0,
-    userUpgradeToProviders
+    total: total.length || 0,
+    usersUpgrade: total
   };
 };
+
 module.exports = {
   getMyInfo,
   uploadAvatarService,

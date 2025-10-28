@@ -11,7 +11,8 @@ const ownerInfoSchema = new mongoose.Schema(
     cardHolderName: { type: String, required: true },
     cardNumber: { type: String, required: true },
     bankAccount: { type: String, required: true },
-    bankName: { type: String, required: true }
+    bankName: { type: String, required: true },
+    isApprove: { type: Boolean, required: true, default: false }
   },
   { timestamps: true }
 );
