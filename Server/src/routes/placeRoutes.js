@@ -13,7 +13,10 @@ const {
   removePlaceFavorite,
   getPlacesFavorite,
   getStatsPlace,
-  getPlacesAwaitConfirm
+  getPlacesAwaitConfirm,
+  approvePlace,
+  getAllAdmin,
+  rejectPlace
 } = require('../controllers/placeController');
 const {
   getSearchHotels,
@@ -35,9 +38,12 @@ router
   .get('/favorite', verifyToken, getPlacesFavorite)
   .get('/stats', verifyToken, getStatsPlace)
   .get('/await-approve', verifyToken, getPlacesAwaitConfirm)
+  .get('/admin', verifyToken, getAllAdmin)
   .get('/:placeId', getInfoOnePlace)
   .get('/', getAll)
   .patch('/update-status-active/:placeId', verifyToken, updateStatusActive)
+  .patch('/approve/:placeId', verifyToken, approvePlace)
+  .patch('/reject/:placeId', verifyToken, rejectPlace)
   .put('/:placeId', verifyToken, upload.array('images'), updatePlace)
   .delete('/favorite/:placeId', verifyToken, removePlaceFavorite)
   .delete('/:placeId', verifyToken, deletePlace);

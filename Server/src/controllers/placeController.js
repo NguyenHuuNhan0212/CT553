@@ -12,7 +12,10 @@ const {
   getPlacesPopularByType,
   getPlacesPopular,
   handleGetStatsPlace,
-  handleGetPlacesAwaitConfirm
+  handleGetPlacesAwaitConfirm,
+  handleApprovePlace,
+  handleGetAllAdmin,
+  handleRejectPlace
 } = require('../services/Place');
 
 const {
@@ -204,6 +207,38 @@ const getPlacesAwaitConfirm = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const approvePlace = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const { placeId } = req.params;
+    const result = await handleApprovePlace(role, placeId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getAllAdmin = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const result = await handleGetAllAdmin(role);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const rejectPlace = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const { placeId } = req.params;
+    const result = await handleRejectPlace(role, placeId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   addPlace,
   getInfoOnePlace,
@@ -219,5 +254,8 @@ module.exports = {
   removePlaceFavorite,
   getPlacesFavorite,
   getStatsPlace,
-  getPlacesAwaitConfirm
+  getPlacesAwaitConfirm,
+  approvePlace,
+  getAllAdmin,
+  rejectPlace
 };

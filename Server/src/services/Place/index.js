@@ -284,11 +284,66 @@ const handleGetPlacesAwaitConfirm = async (role) => {
   if (role !== 'admin') {
     throw new Error('Không có quyền');
   }
-  const places = await PlaceModel.find({ isApprove: false }).lean();
+  const places = await PlaceModel.find({
+    isApprove: false,
+    $expr: { $eq: ['$createdAt', '$updatedAt'] }
+  }).lean();
   return {
     total: places.length || 0,
     places
   };
+};
+
+const handleApprovePlace = async (role, placeId) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền phê duyệt địa điểm.');
+  }
+
+  const place = await PlaceModel.findOne({ _id: placeId, isApprove: false });
+  if (!place) {
+    throw new Error('Địa điểm không tồn tại hoặc đã được phê duyệt.');
+  }
+
+  if (place.createdAt.getTime() !== place.updatedAt.getTime()) {
+    throw new Error('Địa điểm này đã được xử lý trước đó.');
+  }
+
+  await PlaceModel.findByIdAndUpdate(place._id, {
+    isApprove: true,
+    updatedAt: new Date()
+  });
+
+  return { message: 'Phê duyệt địa điểm thành công.' };
+};
+
+const handleGetAllAdmin = async (role) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền');
+  }
+  const places = await PlaceModel.find({}).sort({ createdAt: -1 });
+  return places;
+};
+
+const handleRejectPlace = async (role, placeId) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền phê duyệt địa điểm.');
+  }
+
+  const place = await PlaceModel.findOne({ _id: placeId, isApprove: false });
+  if (!place) {
+    throw new Error('Địa điểm không tồn tại hoặc đã được phê duyệt.');
+  }
+
+  if (place.createdAt.getTime() !== place.updatedAt.getTime()) {
+    throw new Error('Địa điểm này đã được xử lý trước đó.');
+  }
+
+  await PlaceModel.findByIdAndUpdate(place._id, {
+    isApprove: false,
+    updatedAt: new Date()
+  });
+
+  return { message: 'Từ chối địa điểm thành công.' };
 };
 module.exports = {
   addPlaceService,
@@ -304,5 +359,8 @@ module.exports = {
   getPlacesPopularByType,
   getPlacesPopular,
   handleGetStatsPlace,
-  handleGetPlacesAwaitConfirm
+  handleGetPlacesAwaitConfirm,
+  handleApprovePlace,
+  handleGetAllAdmin,
+  handleRejectPlace
 };
