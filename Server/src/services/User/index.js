@@ -145,7 +145,9 @@ const handleGetAllAccountUpgradeProvider = async (role) => {
   const owners = await OwnerModel.find({
     isApprove: false
   })
-    .select('userId bankName bankAccount createdAt isApprove')
+    .select(
+      'userId bankName bankAccount cardHolderName cardNumber createdAt isApprove'
+    )
     .populate('userId', '_id fullName email phone createdAt')
     .lean();
 
@@ -164,7 +166,9 @@ const handleGetAllAccountUpgradeProvider = async (role) => {
         bankName: owner.bankName,
         isApprove: owner.isApprove,
         bankAccount: owner.bankAccount,
-        upgradeDate: owner.createdAt
+        upgradeDate: owner.createdAt,
+        cardHolderName: owner.cardHolderName,
+        cardNumber: owner.cardNumber
       };
     } else {
       return null;
@@ -234,6 +238,50 @@ const handleRejectUpgradeToProvider = async (role, userId) => {
     message: 'Đã từ chối nâng cấp nhà cung cấp thành công.'
   };
 };
+
+const handleGetAllUser = async (role) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền truy cập.');
+  }
+  const users = await UserModel.find({ role: { $ne: 'admin' } })
+    .select('_id fullName email phone createdAt role')
+    .sort({ createdAt: -1 })
+    .lean();
+  const owners = await OwnerModel.find({ isApprove: true })
+    .select(
+      'userId bankName bankAccount cardHolderName cardNumber createdAt isApprove'
+    )
+    .populate('userId', '_id')
+    .lean();
+  const mergedUsers = users.map((user) => {
+    const ownerInfo = owners.find(
+      (o) => o.userId?._id.toString() === user._id.toString()
+    );
+
+    return {
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      registerDate: user.createdAt,
+      ...(ownerInfo
+        ? {
+            isProviderApproved: true,
+            bankName: ownerInfo.bankName,
+            bankAccount: ownerInfo.bankAccount,
+            cardHolderName: ownerInfo.cardHolderName,
+            cardNumber: ownerInfo.cardNumber
+          }
+        : {
+            isProviderApproved: false
+          })
+    };
+  });
+
+  return mergedUsers;
+};
+
 module.exports = {
   getMyInfo,
   uploadAvatarService,
@@ -243,5 +291,6 @@ module.exports = {
   handleGetStatsUser,
   handleGetAllAccountUpgradeProvider,
   handleConfirmUpgradeToProvider,
-  handleRejectUpgradeToProvider
+  handleRejectUpgradeToProvider,
+  handleGetAllUser
 };

@@ -7,7 +7,8 @@ const {
   handleGetStatsUser,
   handleGetAllAccountUpgradeProvider,
   handleConfirmUpgradeToProvider,
-  handleRejectUpgradeToProvider
+  handleRejectUpgradeToProvider,
+  handleGetAllUser
 } = require('../services/User');
 
 const getMyProfile = async (req, res) => {
@@ -104,6 +105,16 @@ const rejectUpgradeToProvider = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const getAllUser = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const result = await handleGetAllUser(role);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   getMyProfile,
   uploadAvatar,
@@ -113,5 +124,6 @@ module.exports = {
   getStatsUser,
   getAllAccountAwaitConfirm,
   confirmUpgradeToProvider,
-  rejectUpgradeToProvider
+  rejectUpgradeToProvider,
+  getAllUser
 };

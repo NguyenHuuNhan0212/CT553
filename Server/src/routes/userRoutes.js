@@ -7,7 +7,8 @@ const {
   getStatsUser,
   getAllAccountAwaitConfirm,
   confirmUpgradeToProvider,
-  rejectUpgradeToProvider
+  rejectUpgradeToProvider,
+  getAllUser
 } = require('../controllers/userController.js');
 const upload = require('../middlewares/upload.js');
 const express = require('express');
@@ -17,6 +18,7 @@ router
   .get('/users/upgrade', verifyToken, getAllAccountAwaitConfirm)
   .get('/my-profile', verifyToken, getMyProfile)
   .get('/users/stats', verifyToken, getStatsUser)
+  .get('/users', verifyToken, getAllUser)
   .post('/avatar', verifyToken, upload.single('avatar'), uploadAvatar)
   .patch('/update-profile', verifyToken, uploadProfileController)
   .post('/users/upgrade/confirm/:userId', verifyToken, confirmUpgradeToProvider)

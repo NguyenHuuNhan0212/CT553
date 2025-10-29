@@ -48,8 +48,22 @@ const handleGetUsersSevenDaysNewest = async (role) => {
   ]);
   return users;
 };
-
+const handleGetFivePlacesPopular = async (role) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền truy cập.');
+  }
+  const places = await PlaceModel.find({
+    isActive: true,
+    isApprove: true,
+    deleted: false
+  })
+    .lean()
+    .sort({ bookingCount: -1 })
+    .limit(5);
+  return places;
+};
 module.exports = {
   handleGetStatsPlaceByType,
-  handleGetUsersSevenDaysNewest
+  handleGetUsersSevenDaysNewest,
+  handleGetFivePlacesPopular
 };

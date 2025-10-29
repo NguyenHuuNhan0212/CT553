@@ -294,7 +294,9 @@ const handleGetPlacesAwaitConfirm = async (role) => {
   const places = await PlaceModel.find({
     isApprove: false,
     $expr: { $eq: ['$createdAt', '$updatedAt'] }
-  }).lean();
+  })
+    .lean()
+    .populate('userId', 'email fullName');
   return {
     total: places.length || 0,
     places
@@ -347,7 +349,9 @@ const handleGetAllAdmin = async (role) => {
   if (role !== 'admin') {
     throw new Error('Không có quyền');
   }
-  const places = await PlaceModel.find({}).sort({ createdAt: -1 });
+  const places = await PlaceModel.find({})
+    .sort({ createdAt: -1 })
+    .populate('userId', 'email fullName');
   return places;
 };
 
