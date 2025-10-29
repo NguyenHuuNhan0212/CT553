@@ -5,7 +5,9 @@ const {
   changePassword,
   upgradeToProvider,
   handleGetStatsUser,
-  handleGetAllAccountUpgradeProvider
+  handleGetAllAccountUpgradeProvider,
+  handleConfirmUpgradeToProvider,
+  handleRejectUpgradeToProvider
 } = require('../services/User');
 
 const getMyProfile = async (req, res) => {
@@ -81,6 +83,27 @@ const getAllAccountAwaitConfirm = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const confirmUpgradeToProvider = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const { userId } = req.params;
+    const result = await handleConfirmUpgradeToProvider(role, userId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+const rejectUpgradeToProvider = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const { userId } = req.params;
+    const result = await handleRejectUpgradeToProvider(role, userId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   getMyProfile,
   uploadAvatar,
@@ -88,5 +111,7 @@ module.exports = {
   changePass,
   upgradeToProviderController,
   getStatsUser,
-  getAllAccountAwaitConfirm
+  getAllAccountAwaitConfirm,
+  confirmUpgradeToProvider,
+  rejectUpgradeToProvider
 };

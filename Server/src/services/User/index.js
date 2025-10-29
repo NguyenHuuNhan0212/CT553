@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const UserModel = require('../../models/User');
 const OwnerModel = require('../../models/Supplier');
+const { sendMail } = require('../../utils/nodemailer');
 const getMyInfo = async (id) => {
   const user = await UserModel.findById(id, '-password').lean();
   if (user && user.role === 'provider') {
@@ -138,14 +139,13 @@ const handleGetAllAccountUpgradeProvider = async (role) => {
   }
 
   const users = await UserModel.find({ role: 'user' })
-    .select('_id fullName email phone createdAt')
+    .select('_id fullName email phone createdAt role')
     .lean();
 
   const owners = await OwnerModel.find({
-    isApprove: false,
-    $expr: { $eq: ['$createdAt', '$updatedAt'] }
+    isApprove: false
   })
-    .select('userId bankName bankAccount createdAt')
+    .select('userId bankName bankAccount createdAt isApprove')
     .populate('userId', '_id fullName email phone createdAt')
     .lean();
 
@@ -159,8 +159,10 @@ const handleGetAllAccountUpgradeProvider = async (role) => {
         fullName: user?.fullName,
         email: user?.email,
         phone: user?.phone,
+        role: user?.role,
         registerDate: user?.createdAt,
         bankName: owner.bankName,
+        isApprove: owner.isApprove,
         bankAccount: owner.bankAccount,
         upgradeDate: owner.createdAt
       };
@@ -174,7 +176,64 @@ const handleGetAllAccountUpgradeProvider = async (role) => {
     usersUpgrade: total
   };
 };
+const handleConfirmUpgradeToProvider = async (role, userId) => {
+  if (role !== 'admin') {
+    throw new Error('Bạn không có quyền thực hiện hành động này.');
+  }
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    throw new Error('Người dùng không tồn tại.');
+  }
+  if (user.role === 'provider') {
+    throw new Error('Người dùng đã là nhà cung cấp.');
+  }
+  const ownerInfo = await OwnerModel.findOne({ userId });
+  if (!ownerInfo) {
+    throw new Error('Không tìm thấy thông tin đăng ký nhà cung cấp.');
+  }
+  ownerInfo.isApprove = true;
+  await ownerInfo.save();
+  user.role = 'provider';
+  await user.save();
+  sendMail({
+    to: user.email,
+    subject: 'Xác nhận nâng cấp nhà cung cấp thành công',
+    html: `<p>Chào ${user.fullName},</p>
+            <p>Tài khoản của bạn đã được nâng cấp lên nhà cung cấp thành công. Bây giờ bạn có thể bắt đầu thêm và quản lý các địa điểm du lịch trên nền tảng của chúng tôi.</p>
+            <p>Chúc bạn có những trải nghiệm tuyệt vời!</p>
+            <p>Trân trọng,</p>
+            <p>Đội ngũ Vigo Travel</p>`
+  });
+  return {
+    message: 'Xác nhận nâng cấp nhà cung cấp thành công.'
+  };
+};
 
+const handleRejectUpgradeToProvider = async (role, userId) => {
+  if (role !== 'admin') {
+    throw new Error('Bạn không có quyền thực hiện hành động này.');
+  }
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    throw new Error('Người dùng không tồn tại.');
+  }
+  const ownerInfo = await OwnerModel.findOne({ userId });
+  if (!ownerInfo) {
+    throw new Error('Không tìm thấy thông tin đăng ký nhà cung cấp.');
+  }
+  await OwnerModel.deleteOne({ userId });
+  sendMail({
+    to: user.email,
+    subject: 'Từ chối nâng cấp nhà cung cấp',
+    html: `<p>Chào ${user.fullName},</p>
+            <p>Chúng tôi rất tiếc phải thông báo rằng yêu cầu nâng cấp nhà cung cấp của bạn đã bị từ chối. Nếu bạn có thắc mắc hoặc cần thêm thông tin, vui lòng liên hệ với đội ngũ hỗ trợ của chúng tôi.</p>
+            <p>Trân trọng,</p>  
+            <p>Đội ngũ Vigo Travel</p>`
+  });
+  return {
+    message: 'Đã từ chối nâng cấp nhà cung cấp thành công.'
+  };
+};
 module.exports = {
   getMyInfo,
   uploadAvatarService,
@@ -182,5 +241,7 @@ module.exports = {
   changePassword,
   upgradeToProvider,
   handleGetStatsUser,
-  handleGetAllAccountUpgradeProvider
+  handleGetAllAccountUpgradeProvider,
+  handleConfirmUpgradeToProvider,
+  handleRejectUpgradeToProvider
 };

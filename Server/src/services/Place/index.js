@@ -267,8 +267,14 @@ const handleGetStatsPlace = async (role) => {
   if (role !== 'admin') {
     throw new Error('Không có quyền.');
   }
-  const places = await PlaceModel.find();
+  const places = await PlaceModel.find({ deleted: false, isApprove: true });
   const placesGroupType = await PlaceModel.aggregate([
+    {
+      $match: {
+        deleted: false,
+        isApprove: true
+      }
+    },
     {
       $group: {
         _id: '$type',
