@@ -1,6 +1,7 @@
 const PlaceModel = require('../../models/Place');
 const OwnerInfo = require('../../models/Supplier');
 const BookingModel = require('../../models/Booking');
+const ItineraryDetailModel = require('../../models/ItineraryDetail');
 const { sendMail } = require('../../utils/nodemailer');
 const addPlaceService = async (userId, data) => {
   const { type, name, address, images, description, services, hotelDetail } =
@@ -235,31 +236,23 @@ const getPlacesPopularByType = async (type) => {
 };
 
 const getPlacesPopular = async () => {
-  const places = await PlaceModel.find({
-    isActive: true,
-    isApprove: true,
-    deleted: false
-  }).lean();
-
-  const popularStats = await BookingModel.aggregate([
-    { $group: { _id: '$placeId', totalBookings: { $sum: 1 } } },
-    { $sort: { totalBookings: -1 } },
+  const popularStats = await ItineraryDetailModel.aggregate([
+    {
+      $group: {
+        _id: '$placeId',
+        total: { $sum: 1 }
+      }
+    },
+    { $sort: { total: -1 } },
     { $limit: 8 }
   ]);
-
-  const popularPlaces = popularStats
-    .map((stat) => {
-      const place = places.find(
-        (p) => p._id.toString() === stat._id.toString()
-      );
-      if (!place) return null;
-      return {
-        ...place,
-        totalBookings: stat.totalBookings
-      };
-    })
-    .filter((p) => p !== null);
-
+  const placeIds = popularStats.map((p) => p._id);
+  const popularPlaces = await PlaceModel.find({
+    _id: { $in: placeIds },
+    isActive: true,
+    deleted: false,
+    isApprove: true
+  }).lean();
   return popularPlaces;
 };
 
