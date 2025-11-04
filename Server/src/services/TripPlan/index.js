@@ -57,6 +57,7 @@ Yêu cầu:
 3. Mỗi ngày phải có **từ 4 đến 6 hoạt động**, các ngày số lượng địa điểm nên khác nhau, chia theo thời gian trong ngày:
    Buổi sáng, Trưa, Chiều, Tối (có thể thêm Sáng sớm hoặc Đêm nếu hợp lý).
 4. Ưu tiên địa điểm đa dạng, nổi bật và gần nhau về vị trí.
+5. Đảm bảo mỗi ngày phải có 1 địa điểm là quán ăn hoặc nhà hàng (có type "restaurant").
 5.  Trả về kế hoạch **chính xác ${numDays} phần tử (ngày)**, không nhiều hơn.
 6. Trả về JSON **hợp lệ duy nhất**, không markdown, không giải thích, theo mẫu:
 [

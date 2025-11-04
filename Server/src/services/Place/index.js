@@ -203,6 +203,7 @@ const updatePlaceService = async (placeId, userId, data) => {
   return { message: 'Cập nhật địa điểm thành công.', place };
 };
 
+// Kiểm tra lại nên hiển thị danh sách các địa điểm có nhiều trong lịch trình
 const getPlacesPopularByType = async (type) => {
   const places = await PlaceModel.find({
     type,
@@ -210,27 +211,31 @@ const getPlacesPopularByType = async (type) => {
     deleted: false,
     isApprove: true
   }).lean();
-
   if (!places.length) return [];
   const placeIds = places.map((p) => p._id);
 
-  const popularStats = await BookingModel.aggregate([
-    { $match: { placeId: { $in: placeIds } } },
-    { $group: { _id: '$placeId', totalBookings: { $sum: 1 } } },
-    { $sort: { totalBookings: -1 } },
-    { $limit: 8 }
+  const popularStats = await ItineraryDetailModel.aggregate([
+    {
+      $match: { placeId: { $in: placeIds } }
+    },
+    {
+      $group: {
+        _id: '$placeId',
+        total: { $sum: 1 }
+      }
+    },
+    {
+      $sort: { total: -1 }
+    }
   ]);
-  const popularPlaces = await Promise.all(
-    popularStats.map(async (stat) => {
-      const place = places.find(
-        (p) => p._id.toString() === stat._id.toString()
-      );
-      return {
-        ...place,
-        totalBookings: stat.totalBookings
-      };
-    })
-  );
+
+  const popularPlaces = popularStats.map((stat) => {
+    const place = places.find((p) => p._id.toString() === stat._id.toString());
+    return {
+      ...place,
+      total: stat.total
+    };
+  });
 
   return popularPlaces;
 };

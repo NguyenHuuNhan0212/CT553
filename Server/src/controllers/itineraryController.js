@@ -6,7 +6,8 @@ const {
   handleAddPriceAndGuest,
   handleDeleteItinerary,
   handleGetAllItineraryTemplate,
-  handleUpdateItinerary
+  handleUpdateItinerary,
+  handleUpdateNoteForItineraryDetail
 } = require('../services/Itinerary');
 
 const createItinerary = async (req, res) => {
@@ -89,6 +90,22 @@ const updateItinerary = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const updateNoteForItineraryDetail = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { itineraryDetailId } = req.params;
+    const { note } = req.body;
+    const result = await handleUpdateNoteForItineraryDetail(
+      userId,
+      itineraryDetailId,
+      note
+    );
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   createItinerary,
   getAllItinerariesByUserId,
@@ -97,5 +114,6 @@ module.exports = {
   addPeopleAndPrice,
   deleteItinerary,
   getAllItineraryTemplate,
-  updateItinerary
+  updateItinerary,
+  updateNoteForItineraryDetail
 };

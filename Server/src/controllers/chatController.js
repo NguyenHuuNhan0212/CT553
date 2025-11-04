@@ -96,25 +96,33 @@ const ask = async (req, res) => {
       const placeName = await extractPlaceName(question);
       const city = await extractCity(question);
       const place = await getPlaceInfo(placeName, city);
-      const formatPlaceInfo = await formatPlaceInfoWithGPT(place);
-      answer = `${formatPlaceInfo}`;
-    } else if (category === 'greeting') {
-      answer = 'Chào bạn! Tôi có thể giúp bạn về du lịch. 😊';
-    } else if (category === 'other') {
-      answer = 'Xin lỗi, tôi chỉ có thể hỗ trợ về du lịch.';
-    } else if (category === 'travel') {
-      cityToUse = await extractCity(question);
-
-      if (isWeatherQuestion(question)) {
-        try {
-          answer = await getWeather(cityToUse);
-        } catch {
-          answer = 'Xin lỗi, tôi không lấy được dữ liệu thời tiết hiện tại.';
+      if (!place) {
+        return res.json({
+          type: 'text',
+          answer: `Xin lỗi, tôi chưa có thông tin về địa điểm ${placeName}.`
+        });
+      }
+      return res.json({
+        type: 'place_info',
+        data: {
+          _id: place._id,
+          name: place.name,
+          type: place.type,
+          image: place.images[0],
+          address: place.address,
+          description: place.description,
+          services: place.services
         }
-      } else if (isPlaceListQuestion(question)) {
+      });
+    } else if (category === 'places') {
+      cityToUse = await extractCity(question);
+      console.log(cityToUse);
+      if (isPlaceListQuestion(question)) {
         const typeMap = {
           'khách sạn': 'hotel',
           hotel: 'hotel',
+          'nhà nghĩ': 'hotel',
+          'địa điểm lưu trú': 'hotel',
           'nhà hàng': 'restaurant',
           'địa điểm ăn uống': 'restaurant',
           'quán ăn': 'restaurant',
@@ -148,9 +156,12 @@ const ask = async (req, res) => {
           };
         });
         if (!placesWithAvg.length) {
-          answer = `Xin lỗi, tôi chưa có dữ liệu về ${
-            foundType || 'địa điểm'
-          } ở ${cityToUse}.`;
+          return res.json({
+            type: 'text',
+            answer: `Xin lỗi, tôi chưa có dữ liệu về ${
+              foundType || 'địa điểm'
+            } ở ${cityToUse}.`
+          });
         } else {
           const placeType =
             foundType === 'touristSpot'
@@ -160,34 +171,34 @@ const ask = async (req, res) => {
               : foundType === 'hotel'
               ? 'Địa điểm lưu trú'
               : 'Địa điểm ăn uống';
-          answer =
-            `Một số ${placeType} nổi bật tại ${cityToUse}:\n` +
-            placesWithAvg
-              .map(
-                (p, i) =>
-                  `<p>${i + 1}. ${p.name} - ${p.address}</p>
-                    <a href="http://localhost:5173/place/${
-                      p._id
-                    }" target="_blank" style="color:#1677ff;text-decoration:none;">
-  🔗 Xem chi tiết
-</a>
-                 ${p.description} - Giá trung bình: ${
-                    p.avgPrice || 'Không có thông tin về giá các dịch vụ'
-                  } ${
-                    p.avgPrice
-                      ? foundType === 'hotel'
-                        ? 'VND/đêm'
-                        : foundType === 'restaurant'
-                        ? 'VND/người'
-                        : foundType === 'cafe'
-                        ? 'VND/dịch vụ'
-                        : foundType === 'touristSpot'
-                        ? 'VND/dịch vụ'
-                        : ''
-                      : ''
-                  }`
-              )
-              .join('\n\n');
+          return res.json({
+            type: 'places',
+            placeType,
+            city: cityToUse,
+            data: placesWithAvg.map((p) => ({
+              _id: p._id,
+              name: p.name,
+              type: p.type,
+              image: p.images[0],
+              address: p.address,
+              description: p.description,
+              avgPrice: p.avgPrice
+            }))
+          });
+        }
+      }
+    } else if (category === 'greeting') {
+      answer = 'Chào bạn! Tôi có thể giúp bạn về du lịch. 😊';
+    } else if (category === 'other') {
+      answer = 'Xin lỗi, tôi chỉ có thể hỗ trợ về du lịch.';
+    } else if (category === 'travel') {
+      cityToUse = await extractCity(question);
+
+      if (isWeatherQuestion(question)) {
+        try {
+          answer = await getWeather(cityToUse);
+        } catch {
+          answer = 'Xin lỗi, tôi không lấy được dữ liệu thời tiết hiện tại.';
         }
       } else {
         // fallback AI

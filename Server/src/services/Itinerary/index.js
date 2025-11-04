@@ -83,7 +83,9 @@ const handleGetItineraryDetail = async (itineraryId) => {
         duration: `${d.startTime || 'Thời gian bắt đầu'} - ${
           d.endTime || 'Thời gian kết thúc'
         }`,
-        note: d.note
+        note: d.note,
+        itineraryDetailId: d._id,
+        itineraryId: d.itineraryId
       }))
     }));
     return {
@@ -106,7 +108,7 @@ const handleUpdateStatus = async (userId, itineraryId) => {
   }
 };
 const handleAddPriceAndGuest = async (userId, itineraryId, data) => {
-  const { people, priceForItinerary } = data;
+  const { people, priceForItinerary, description } = data;
   const itinerary = await ItineraryModel.findOne({
     userId,
     _id: itineraryId
@@ -116,7 +118,8 @@ const handleAddPriceAndGuest = async (userId, itineraryId, data) => {
   } else {
     const itineraryNew = await ItineraryModel.findByIdAndUpdate(itinerary._id, {
       people,
-      priceForItinerary
+      priceForItinerary,
+      description
     });
     return {
       itineraryNew,
@@ -197,6 +200,32 @@ const handleUpdateItinerary = async (userId, itineraryId, data) => {
     message: 'Cập nhật lịch trình thành công.'
   };
 };
+const handleUpdateNoteForItineraryDetail = async (
+  userId,
+  itineraryDetailId,
+  note
+) => {
+  const itineraryDetailCheck = await ItineraryDetailModel.findById(
+    itineraryDetailId
+  ).lean();
+  if (!itineraryDetailCheck) {
+    throw new Error('Không tìm thấy chi tiết lịch trình.');
+  }
+  const itinerary = await ItineraryModel.findOne({
+    userId,
+    _id: itineraryDetailCheck.itineraryId
+  }).lean();
+  if (!itinerary) {
+    throw new Error('Không có quyền cập nhật ghi chú.');
+  }
+  const itineraryDetail = await ItineraryDetailModel.findByIdAndUpdate(
+    itineraryDetailId,
+    { note }
+  );
+  return {
+    message: 'Cập nhật ghi chú thành công.'
+  };
+};
 module.exports = {
   handleCreate,
   handleGetAllByUserId,
@@ -205,5 +234,6 @@ module.exports = {
   handleAddPriceAndGuest,
   handleDeleteItinerary,
   handleGetAllItineraryTemplate,
-  handleUpdateItinerary
+  handleUpdateItinerary,
+  handleUpdateNoteForItineraryDetail
 };

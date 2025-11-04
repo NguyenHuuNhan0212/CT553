@@ -39,8 +39,8 @@ async function countBookedRooms(placeId, roomTypeId, checkIn, checkOut) {
       $match: {
         placeId: placeObjId,
         status: { $ne: 'cancelled' },
-        checkInDate: { $lt: new Date(checkOut) },
-        checkOutDate: { $gt: new Date(checkIn) }
+        checkInDate: { $lte: new Date(checkOut) },
+        checkOutDate: { $gte: new Date(checkIn) }
       }
     },
     { $unwind: '$bookingDetails' },

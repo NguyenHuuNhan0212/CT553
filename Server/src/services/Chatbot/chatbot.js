@@ -6,22 +6,28 @@ async function classifyQuestion(question) {
     role: 'system',
     content: `
 Bạn là một trợ lý AI thân thiện và hữu ích.
-Phân loại câu hỏi người dùng thành 4 loại:
+Phân loại câu hỏi người dùng thành 6 loại:
 1. greeting → câu chào
 2. travel → câu hỏi liên quan du lịch (địa điểm, thời tiết, khách sạn, ăn uống, phương tiện, lịch trình, chi phí...)
 3. plan_trip →  yêu cầu tạo lịch trình du lịch (ví dụ: "lập kế hoạch đi Cần Thơ 2 ngày 1 đêm")
-4. place_info →  yêu cầu xem thông tin chi tiết của 1 địa điểm (ví dụ: "cho tôi xem thông tin của bến ninh kiều")
-5. other → các câu hỏi khác ngoài du lịch
-Trả về duy nhất 1 từ: greeting, travel, plan_trip, place_info, other
+4. place_info →  yêu cầu xem thông tin chi tiết của 1 địa điểm.(ví dụ: "cho tôi xem thông tin của bến ninh kiều")
+5. places → yêu cầu xem danh sách địa điểm. (ví dụ: "Cho tôi xem danh sách quán cafe ở cần thơ", "Các địa điểm du lịch nổi bật ở cần thơ").
+6. other → các câu hỏi khác ngoài du lịch
+Trả về duy nhất 1 từ: greeting, travel, plan_trip, place_info, places, other
 `
   };
   const userMessage = { role: 'user', content: question };
   const response = await chatWithLLM([systemPrompt, userMessage]);
   const category = response.trim().toLowerCase();
   if (
-    ['greeting', 'travel', 'plan_trip', 'place_info', 'other'].includes(
-      category
-    )
+    [
+      'greeting',
+      'travel',
+      'plan_trip',
+      'place_info',
+      'places',
+      'other'
+    ].includes(category)
   )
     return category;
   return 'other';
@@ -33,7 +39,7 @@ async function extractPlaceName(message) {
   const prompt = `
 Bạn là một bộ trích xuất thông tin.
 Nhiệm vụ của bạn là tìm **tên địa điểm du lịch, khu nghỉ dưỡng, nhà hàng, quán ăn, khách sạn hoặc địa danh** trong câu sau.
-Chỉ trả về JSON ở dạng sau, không giải thích thêm:
+Chỉ trả về JSON ở dạng sau, không giải thích thêm TRẢ VỀ CHÍNH XÁC TÊN ĐỊA ĐIỂM TRÍCH XUẤT ĐƯỢC:
 {"place": "<tên địa điểm (NẾU CÓ TỪ QUÁN Ở ĐẦU THÌ LOẠI BỎ TỪ QUÁN) hoặc null nếu không có>"}
 
 Câu: "${message}"
@@ -213,6 +219,8 @@ function isPlaceListQuestion(question) {
     q.includes('khách sạn') ||
     q.includes('hotel') ||
     q.includes('nhà hàng') ||
+    q.includes('nhà nghỉ') ||
+    q.includes('địa điểm lưu trú') ||
     q.includes('địa điểm ăn uống') ||
     q.includes('quán ăn') ||
     q.includes('cafe') ||
@@ -226,7 +234,7 @@ function isPlaceListQuestion(question) {
 
 async function getPlaceInfo(placeName, address) {
   let place;
-  if (!address) {
+  if (address === 'NULL') {
     place = await Place.findOne({
       name: { $regex: placeName, $options: 'i' },
       isActive: true,

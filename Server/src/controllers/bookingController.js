@@ -2,13 +2,12 @@ const {
   createBooking,
   getBookings,
   getBookingDetail,
-  deleteBookingForUser,
   handleCancelBooking,
   getServiceBookingForPlace,
-  handleDeleteForSupplier,
   handleConfirmPayment,
   createInternalBookingForSupplier,
-  handleCancelBookingForSupplier
+  handleCancelBookingForSupplier,
+  deleteBookingForUser
 } = require('../services/Booking');
 
 const createBookingController = async (req, res) => {
@@ -17,6 +16,16 @@ const createBookingController = async (req, res) => {
     const data = req.body;
     const result = await createBooking(userId, data);
     return res.status(201).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+const deletedBooking = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { bookingId } = req.params;
+    const result = await deleteBookingForUser(userId, bookingId);
+    return res.status(200).json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -51,25 +60,7 @@ const getBookingById = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-const deletedBooking = async (req, res) => {
-  try {
-    const { userId } = req.user;
-    const { bookingId } = req.params;
-    const result = await deleteBookingForUser(userId, bookingId);
-    return res.status(200).json(result);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-const deleteBookingForSupplier = async (req, res) => {
-  try {
-    const { bookingId } = req.params;
-    const result = await handleDeleteForSupplier(bookingId);
-    return res.status(200).json(result);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
+
 const cancelBooking = async (req, res) => {
   try {
     const { userId } = req.user;
@@ -122,11 +113,10 @@ module.exports = {
   createBookingController,
   getBookingsController,
   getBookingById,
-  deletedBooking,
   cancelBooking,
   getServiceBookingsBySupplierId,
-  deleteBookingForSupplier,
   confirmPayment,
   createInternalBookingController,
-  cancelBookingForSupplier
+  cancelBookingForSupplier,
+  deletedBooking
 };

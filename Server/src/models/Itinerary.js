@@ -10,6 +10,7 @@ const itinerarySchema = new mongoose.Schema(
     title: { type: String, required: true },
     destination: { type: String, required: true },
     numDays: { type: Number },
+    description: { type: String },
     creatorName: { type: String, required: true },
     status: {
       type: String,

@@ -6,7 +6,8 @@ const {
   addPeopleAndPrice,
   deleteItinerary,
   getAllItineraryTemplate,
-  updateItinerary
+  updateItinerary,
+  updateNoteForItineraryDetail
 } = require('../controllers/itineraryController');
 const {
   generateTripPlanController
@@ -20,6 +21,7 @@ router
   .get('/template', getAllItineraryTemplate)
   .get('/my-itinerary', verifyToken, getAllItinerariesByUserId)
   .get('/:itineraryId', getItineraryDetail)
+  .patch('/note/:itineraryDetailId', verifyToken, updateNoteForItineraryDetail)
   .patch('/price-people/:itineraryId', verifyToken, addPeopleAndPrice)
   .patch('/status/:itineraryId', verifyToken, updateStatus)
   .patch('/:itineraryId', verifyToken, updateItinerary)

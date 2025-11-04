@@ -6,8 +6,8 @@ async function extractCity(question) {
     content: `
 Bạn là một trợ lý AI thông minh.
 Nhiệm vụ: Tìm tên **thành phố ở Việt Nam** trong câu hỏi của người dùng.
-Nếu tìm thấy, chỉ trả về tên thành phố. Nếu không tìm thấy trả về "NULL".
-Trả lời duy nhất tên thành phố hoặc "NULL", không thêm chữ khác.
+Nếu tìm thấy, chỉ trả về tên thành phố hoặc tên Tỉnh. Nếu không tìm thấy trả về "NULL".
+Trả lời duy nhất tên thành phố hoặc tên Tỉnh hoặc "NULL", không thêm chữ khác.
 `
   };
 

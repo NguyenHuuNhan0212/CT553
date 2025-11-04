@@ -39,7 +39,7 @@ const login = async (data) => {
     }
     const isMatch = await bcrypt.compare(data.password, user.password);
     if (!isMatch) {
-      throw new Error('Email hoặc mật khẩu không đúng.');
+      throw new Error('Mật khẩu không đúng.');
     }
     const token = generateToken(user);
     const refreshToken = generateRefreshToken(user);

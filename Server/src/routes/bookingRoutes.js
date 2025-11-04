@@ -2,13 +2,12 @@ const {
   createBookingController,
   getBookingsController,
   getBookingById,
-  deletedBooking,
   cancelBooking,
   getServiceBookingsBySupplierId,
-  deleteBookingForSupplier,
   confirmPayment,
   createInternalBookingController,
-  cancelBookingForSupplier
+  cancelBookingForSupplier,
+  deletedBooking
 } = require('../controllers/bookingController');
 
 const {
@@ -31,6 +30,5 @@ router
   .patch('/confirm-payment/:bookingId', verifyToken, confirmPayment)
   .patch('/supplier/:bookingId', verifyToken, cancelBookingForSupplier)
   .patch('/:bookingId', verifyToken, cancelBooking)
-  .delete('/supplier/:bookingId', deleteBookingForSupplier)
   .delete('/:bookingId', verifyToken, deletedBooking);
 module.exports = router;
