@@ -1,7 +1,11 @@
 const { vnpay } = require('../config/vnpay.js');
 const Booking = require('../models/Booking.js');
 const Payment = require('../models/Payment.js');
-const { createPayment, handleVNPayReturn } = require('../services/Payment');
+const {
+  createPayment,
+  handleVNPayReturn,
+  handleGetAllTransaction
+} = require('../services/Payment');
 const createPaymentUrl = async (req, res) => {
   try {
     const { bookingId, deposit, isOffline } = req.body;
@@ -20,5 +24,13 @@ const vnpayReturn = async (req, res) => {
     res.status(500).send(err.message);
   }
 };
-
-module.exports = { createPaymentUrl, vnpayReturn };
+const getAllTransaction = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const result = await handleGetAllTransaction(role);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+module.exports = { createPaymentUrl, vnpayReturn, getAllTransaction };

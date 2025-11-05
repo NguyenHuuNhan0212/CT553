@@ -285,7 +285,12 @@ const handleConfirmPayment = async (bookingId) => {
     await BookingModel.findByIdAndUpdate(bookingId, { status: 'confirmed' });
     await PaymentModel.findOneAndUpdate(
       { bookingId },
-      { status: 'success', paymentType: 'full', amount: booking.totalPrice }
+      {
+        status: 'success',
+        paymentType: 'full',
+        amount: booking.totalPrice,
+        paymentDate: new Date()
+      }
     );
     return {
       message: 'Xác nhận thanh toán thành công'

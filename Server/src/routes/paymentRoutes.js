@@ -1,12 +1,16 @@
 const express = require('express');
 const {
   createPaymentUrl,
-  vnpayReturn
+  vnpayReturn,
+  getAllTransaction
 } = require('../controllers/paymentController.js');
+const verifyToken = require('../middlewares/authMiddleware.js');
 
 const router = express.Router();
 
-router.post('/create-payment-url', createPaymentUrl);
-router.get('/payment-return', vnpayReturn);
+router
+  .post('/create-payment-url', createPaymentUrl)
+  .get('/payment-return', vnpayReturn)
+  .get('/admin', verifyToken, getAllTransaction);
 
 module.exports = router;

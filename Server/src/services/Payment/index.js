@@ -83,4 +83,41 @@ const handleVNPayReturn = async (query) => {
     }&bookingId=${bookingId}&amount=${amount}`
   };
 };
-module.exports = { createPayment, handleVNPayReturn };
+
+const handleGetAllTransaction = async (role) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền truy cập.');
+  }
+
+  const transactions = await PaymentModel.find({ amount: { $gt: 0 } })
+    .populate({
+      path: 'bookingId',
+      populate: [
+        { path: 'userId', select: '-password' },
+        {
+          path: 'placeId',
+          populate: { path: 'userId', select: '-password' }
+        }
+      ]
+    })
+    .lean()
+    .sort({ createdAt: -1 });
+  const result = transactions.map((t) => {
+    return {
+      _id: t._id,
+      userBooking: t.bookingId?.userId?.fullName || null,
+      supplier: t.bookingId?.placeId?.userId?.fullName || null,
+      services: t.bookingId?.bookingDetails || [],
+      amount: t.amount,
+      placeName: t.bookingId?.placeId?.name,
+      paymentMethod: t.method,
+      paymentDate: t.paymentDate,
+      paymentStatus: t.status,
+      bookingStatus: t.bookingId?.status
+    };
+  });
+  return {
+    transactions: result
+  };
+};
+module.exports = { createPayment, handleVNPayReturn, handleGetAllTransaction };
