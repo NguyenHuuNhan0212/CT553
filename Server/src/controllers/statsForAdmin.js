@@ -2,7 +2,8 @@ const {
   handleGetStatsPlaceByType,
   handleGetUsersSevenDaysNewest,
   handleGetFivePlacesPopular,
-  handleGetFivePlacesHaveInItinerary
+  handleGetFivePlacesHaveInItinerary,
+  handleGetStatsRevenueAndTransaction
 } = require('../services/StatsForAdmin');
 
 const getStatsPlaceByType = async (req, res) => {
@@ -42,9 +43,20 @@ const getFivePlacesHaveInItinerary = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const getStatsRevenueAndTransaction = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const result = await handleGetStatsRevenueAndTransaction(role);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   getStatsPlaceByType,
   getUsersSevenDaysNewest,
   getFivePlacesPopular,
-  getFivePlacesHaveInItinerary
+  getFivePlacesHaveInItinerary,
+  getStatsRevenueAndTransaction
 };

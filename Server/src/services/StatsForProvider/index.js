@@ -23,7 +23,7 @@ const handleGetStats = async (userId) => {
       $match: {
         placeId: { $in: placeIds },
         status: 'confirmed',
-        checkOutDate: { $lt: new Date() }
+        checkOutDate: { $lte: new Date() }
       }
     },
     {

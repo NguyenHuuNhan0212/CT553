@@ -2,7 +2,8 @@ const {
   getStatsPlaceByType,
   getUsersSevenDaysNewest,
   getFivePlacesPopular,
-  getFivePlacesHaveInItinerary
+  getFivePlacesHaveInItinerary,
+  getStatsRevenueAndTransaction
 } = require('../controllers/statsForAdmin');
 
 const verifyToken = require('../middlewares/authMiddleware');
@@ -16,5 +17,10 @@ router
     '/admin/five-places-itinerary',
     verifyToken,
     getFivePlacesHaveInItinerary
+  )
+  .get(
+    '/admin/revenue-and-transaction',
+    verifyToken,
+    getStatsRevenueAndTransaction
   );
 module.exports = router;

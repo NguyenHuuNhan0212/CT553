@@ -1,5 +1,7 @@
 const PlaceModel = require('../../models/Place');
 const UserModel = require('../../models/User');
+const BookingModel = require('../../models/Booking');
+const PaymentModel = require('../../models/Payment');
 const ItineraryDetailModel = require('../../models/ItineraryDetail');
 const handleGetStatsPlaceByType = async (role) => {
   if (role !== 'admin') {
@@ -98,9 +100,25 @@ const handleGetFivePlacesHaveInItinerary = async (role) => {
   });
   return placesMap;
 };
+
+const handleGetStatsRevenueAndTransaction = async (role) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền thực hiện.');
+  }
+  const transactions = await PaymentModel.find({ amount: { $gt: 0 } });
+  const revenues = await PaymentModel.find({ status: 'success' });
+  const totalRevenues = revenues.reduce((act, curr) => {
+    return act + curr?.amount;
+  }, 0);
+  return {
+    totalTransactions: transactions.length || 0,
+    totalRevenues
+  };
+};
 module.exports = {
   handleGetStatsPlaceByType,
   handleGetUsersSevenDaysNewest,
   handleGetFivePlacesPopular,
-  handleGetFivePlacesHaveInItinerary
+  handleGetFivePlacesHaveInItinerary,
+  handleGetStatsRevenueAndTransaction
 };

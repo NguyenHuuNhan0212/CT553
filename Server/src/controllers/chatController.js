@@ -12,7 +12,7 @@ const {
   getAvgCost,
   extractPlaceName,
   getPlaceInfo,
-  formatPlaceInfoWithGPT
+  getPlacesPopular
 } = require('../services/Chatbot/chatbot');
 
 function isTransportQuestion(question) {
@@ -107,6 +107,7 @@ const ask = async (req, res) => {
         data: {
           _id: place._id,
           name: place.name,
+          hotelDetail: place.hotelDetail || null,
           type: place.type,
           image: place.images[0],
           address: place.address,
@@ -116,7 +117,6 @@ const ask = async (req, res) => {
       });
     } else if (category === 'places') {
       cityToUse = await extractCity(question);
-      console.log(cityToUse);
       if (isPlaceListQuestion(question)) {
         const typeMap = {
           'khách sạn': 'hotel',
@@ -142,13 +142,7 @@ const ask = async (req, res) => {
           }
         }
 
-        const places = await Place.find({
-          address: { $regex: cityToUse, $options: 'i' },
-          type: foundType
-        })
-          .lean()
-          .sort({ bookingCount: -1 })
-          .limit(5);
+        const places = await getPlacesPopular(foundType, cityToUse);
         const placesWithAvg = places.map((p) => {
           return {
             ...p,

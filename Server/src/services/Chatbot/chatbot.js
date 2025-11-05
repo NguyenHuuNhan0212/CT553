@@ -1,5 +1,6 @@
 const { chatWithLLM } = require('../../utils/aiClient');
 const Place = require('../../models/Place');
+const ItineraryDetailModel = require('../../models/ItineraryDetail');
 // Phân loại intent
 async function classifyQuestion(question) {
   const systemPrompt = {
@@ -10,7 +11,7 @@ Phân loại câu hỏi người dùng thành 6 loại:
 1. greeting → câu chào
 2. travel → câu hỏi liên quan du lịch (địa điểm, thời tiết, khách sạn, ăn uống, phương tiện, lịch trình, chi phí...)
 3. plan_trip →  yêu cầu tạo lịch trình du lịch (ví dụ: "lập kế hoạch đi Cần Thơ 2 ngày 1 đêm")
-4. place_info →  yêu cầu xem thông tin chi tiết của 1 địa điểm.(ví dụ: "cho tôi xem thông tin của bến ninh kiều")
+4. place_info →  yêu cầu xem thông tin chi tiết của 1 địa điểm.(ví dụ: "cho tôi xem thông tin của bến ninh kiều", "Tôi muốn biết chi tiết về bến ninh kiều")
 5. places → yêu cầu xem danh sách địa điểm. (ví dụ: "Cho tôi xem danh sách quán cafe ở cần thơ", "Các địa điểm du lịch nổi bật ở cần thơ").
 6. other → các câu hỏi khác ngoài du lịch
 Trả về duy nhất 1 từ: greeting, travel, plan_trip, place_info, places, other
@@ -252,6 +253,60 @@ async function getPlaceInfo(placeName, address) {
   }
   return place ? place : null;
 }
+const getPlacesPopular = async (type, address) => {
+  const places = await Place.find({
+    type,
+    address: { $regex: address, $options: 'i' },
+    isActive: true,
+    deleted: false,
+    isApprove: true
+  }).lean();
+
+  const placeIds = places.map((p) => p._id);
+
+  const popularStats = await ItineraryDetailModel.aggregate([
+    {
+      $match: { placeId: { $in: placeIds } }
+    },
+    {
+      $group: {
+        _id: '$placeId',
+        total: { $sum: 1 }
+      }
+    },
+    {
+      $sort: { total: -1 }
+    },
+    {
+      $limit: 5
+    }
+  ]);
+  if (!popularStats.length) {
+    const placePopulars = await Place.find({
+      type,
+      address: { $regex: address, $options: 'i' }
+    })
+      .lean()
+      .sort({ bookingCount: -1 })
+      .limit(5);
+    return placePopulars;
+  }
+
+  const placePopulars = popularStats
+    .map((stats) => {
+      const place = places.find(
+        (p) => p._id.toString() === stats._id.toString()
+      );
+      if (!place) return null;
+      return {
+        ...place,
+        total: stats.total
+      };
+    })
+    .filter(Boolean);
+  return placePopulars;
+};
+
 async function formatPlaceInfoWithGPT(place) {
   if (!place) return 'Không có thông tin địa điểm.';
 
@@ -310,5 +365,6 @@ module.exports = {
   getAvgCost,
   extractPlaceName,
   getPlaceInfo,
-  formatPlaceInfoWithGPT
+  formatPlaceInfoWithGPT,
+  getPlacesPopular
 };
