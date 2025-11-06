@@ -105,10 +105,13 @@ const handleGetAllTransaction = async (role) => {
   const result = transactions.map((t) => {
     return {
       _id: t._id,
+      userInfo: t.bookingId?.userId,
       userBooking: t.bookingId?.userId?.fullName || null,
+      supplierInfo: t.bookingId?.placeId?.userId,
       supplier: t.bookingId?.placeId?.userId?.fullName || null,
       services: t.bookingId?.bookingDetails || [],
       amount: t.amount,
+      placeInfo: t.bookingId?.placeId,
       placeName: t.bookingId?.placeId?.name,
       paymentMethod: t.method,
       paymentDate: t.paymentDate,
@@ -120,4 +123,95 @@ const handleGetAllTransaction = async (role) => {
     transactions: result
   };
 };
-module.exports = { createPayment, handleVNPayReturn, handleGetAllTransaction };
+
+const handleGetAllTransactionCancelled = async (role) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền thực hiện.');
+  }
+  const bookingsCancelled = await BookingModel.find({ status: 'cancelled' });
+  const bookingIds = bookingsCancelled.map((b) => b._id);
+  const transactions = await PaymentModel.find({
+    bookingId: { $in: bookingIds }
+  })
+    .populate({
+      path: 'bookingId',
+      populate: [
+        { path: 'userId', select: '-password' },
+        {
+          path: 'placeId',
+          populate: { path: 'userId', select: '-password' }
+        }
+      ]
+    })
+    .lean();
+  const result = transactions.map((t) => {
+    return {
+      _id: t._id,
+      userInfo: t.bookingId?.userId,
+      userBooking: t.bookingId?.userId?.fullName || null,
+      supplierInfo: t.bookingId?.placeId?.userId,
+      supplier: t.bookingId?.placeId?.userId?.fullName || null,
+      services: t.bookingId?.bookingDetails || [],
+      amount: t.amount,
+      placeInfo: t.bookingId?.placeId,
+      placeName: t.bookingId?.placeId?.name,
+      paymentMethod: t.method,
+      paymentDate: t.paymentDate,
+      paymentStatus: t.status,
+      bookingStatus: t.bookingId?.status
+    };
+  });
+  return {
+    transactions: result
+  };
+};
+
+const handleGetAllTransactionSuccess = async (role) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền thực hiện.');
+  }
+  const bookingsCancelled = await BookingModel.find({ status: 'cancelled' });
+  const bookingIds = bookingsCancelled.map((b) => b._id);
+  const transactions = await PaymentModel.find({
+    bookingId: { $nin: bookingIds },
+    amount: { $gt: 0 }
+  })
+    .populate({
+      path: 'bookingId',
+      populate: [
+        { path: 'userId', select: '-password' },
+        {
+          path: 'placeId',
+          populate: { path: 'userId', select: '-password' }
+        }
+      ]
+    })
+    .lean();
+  const result = transactions.map((t) => {
+    return {
+      _id: t._id,
+      userInfo: t.bookingId?.userId,
+      userBooking: t.bookingId?.userId?.fullName || null,
+      supplierInfo: t.bookingId?.placeId?.userId,
+      supplier: t.bookingId?.placeId?.userId?.fullName || null,
+      services: t.bookingId?.bookingDetails || [],
+      amount: t.amount,
+      placeInfo: t.bookingId?.placeId,
+      placeName: t.bookingId?.placeId?.name,
+      paymentMethod: t.method,
+      paymentDate: t.paymentDate,
+      paymentStatus: t.status,
+      bookingStatus: t.bookingId?.status
+    };
+  });
+  return {
+    transactions: result
+  };
+};
+module.exports = {
+  createPayment,
+  handleVNPayReturn,
+  handleGetAllTransaction,
+  handleGetAllTransactionCancelled,
+  handleGetAllTransactionSuccess
+};
