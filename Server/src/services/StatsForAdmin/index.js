@@ -113,7 +113,8 @@ const handleGetStatsRevenueAndTransaction = async (role) => {
   const bookingCancels = await BookingModel.find({ status: 'cancelled' });
   const bookingCancelIds = bookingCancels.map((b) => b._id);
   const transactionsRefund = await PaymentModel.find({
-    bookingId: { $in: bookingCancelIds }
+    bookingId: { $in: bookingCancelIds },
+    amount: { $gt: 0 }
   });
   return {
     totalTransactions: transactions.length || 0,
