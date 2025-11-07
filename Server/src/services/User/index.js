@@ -282,6 +282,17 @@ const handleGetAllUser = async (role) => {
   return mergedUsers;
 };
 
+const handleGetAllSupplier = async (role) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền thực hiện.');
+  }
+
+  const suppliers = await UserModel.find({ role: 'provider' }).select(
+    'fullName'
+  );
+
+  return suppliers;
+};
 module.exports = {
   getMyInfo,
   uploadAvatarService,
@@ -292,5 +303,6 @@ module.exports = {
   handleGetAllAccountUpgradeProvider,
   handleConfirmUpgradeToProvider,
   handleRejectUpgradeToProvider,
-  handleGetAllUser
+  handleGetAllUser,
+  handleGetAllSupplier
 };

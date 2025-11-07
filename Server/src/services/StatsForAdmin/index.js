@@ -10,8 +10,6 @@ const handleGetStatsPlaceByType = async (role) => {
   const data = await PlaceModel.aggregate([
     {
       $match: {
-        isActive: true,
-        isApprove: true,
         deleted: false
       }
     },
@@ -65,22 +63,46 @@ const handleGetFivePlacesPopular = async (role) => {
   return places;
 };
 
-const handleGetFivePlacesHaveInItinerary = async (role) => {
+const handleGetFivePlacesHaveInItinerary = async (role, location) => {
   if (role !== 'admin') {
     throw new Error('Không có quyền truy cập.');
   }
-  const itineraryStats = await ItineraryDetailModel.aggregate([
-    {
-      $group: {
-        _id: '$placeId',
-        total: { $sum: 1 }
-      }
-    },
-    {
-      $sort: { total: -1 }
-    },
-    { $limit: 5 }
-  ]);
+  let itineraryStats;
+  if (!location) {
+    itineraryStats = await ItineraryDetailModel.aggregate([
+      {
+        $group: {
+          _id: '$placeId',
+          total: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { total: -1 }
+      },
+      { $limit: 5 }
+    ]);
+  } else {
+    const placesByLocation = await PlaceModel.find({
+      address: { $regex: location, $options: 'i' }
+    });
+    const placeIds = placesByLocation.map((p) => p._id);
+    itineraryStats = await ItineraryDetailModel.aggregate([
+      {
+        $match: { placeId: { $in: placeIds } }
+      },
+      {
+        $group: {
+          _id: '$placeId',
+          total: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { total: -1 }
+      },
+      { $limit: 5 }
+    ]);
+  }
+
   const popularPlaces = itineraryStats.map((stat) => stat._id);
   const places = await PlaceModel.find({
     _id: { $in: popularPlaces },
@@ -98,6 +120,7 @@ const handleGetFivePlacesHaveInItinerary = async (role) => {
         )?.total || 0
     };
   });
+  placesMap.sort((a, b) => b.total - a.total);
   return placesMap;
 };
 
@@ -122,10 +145,30 @@ const handleGetStatsRevenueAndTransaction = async (role) => {
     totalTransactionsRefunded: transactionsRefund.length || 0
   };
 };
+const handleGetStatsPlaceStatus = async (role) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền thực hiện.');
+  }
+  const placesApproved = await PlaceModel.find({ isApprove: true });
+  const placesRejected = await PlaceModel.find({
+    isApprove: false,
+    $expr: { $ne: ['$createdAt', '$updatedAt'] }
+  });
+  const placesPendingApproved = await PlaceModel.find({
+    isApprove: false,
+    $expr: { $eq: ['$createdAt', '$updatedAt'] }
+  });
+  return {
+    totalPlacesApproved: placesApproved.length || 0,
+    totalPlacesRejected: placesRejected.length || 0,
+    totalPlacesPendingApproved: placesPendingApproved.length || 0
+  };
+};
 module.exports = {
   handleGetStatsPlaceByType,
   handleGetUsersSevenDaysNewest,
   handleGetFivePlacesPopular,
   handleGetFivePlacesHaveInItinerary,
-  handleGetStatsRevenueAndTransaction
+  handleGetStatsRevenueAndTransaction,
+  handleGetStatsPlaceStatus
 };

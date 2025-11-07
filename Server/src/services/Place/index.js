@@ -7,7 +7,13 @@ const addPlaceService = async (userId, data) => {
   const { type, name, address, images, description, services, hotelDetail } =
     data;
 
-  const checkPlace = await PlaceModel.findOne({ userId, type, name, address });
+  const checkPlace = await PlaceModel.findOne({
+    userId,
+    type,
+    name,
+    address,
+    deleted: false
+  });
   if (checkPlace) {
     throw new Error('Địa điểm đã tồn tại. Bạn không thể thêm nữa.');
   }
@@ -265,12 +271,11 @@ const handleGetStatsPlace = async (role) => {
   if (role !== 'admin') {
     throw new Error('Không có quyền.');
   }
-  const places = await PlaceModel.find({ deleted: false, isApprove: true });
+  const places = await PlaceModel.find({ deleted: false });
   const placesGroupType = await PlaceModel.aggregate([
     {
       $match: {
-        deleted: false,
-        isApprove: true
+        deleted: false
       }
     },
     {
@@ -291,6 +296,7 @@ const handleGetPlacesAwaitConfirm = async (role) => {
   }
   const places = await PlaceModel.find({
     isApprove: false,
+    deleted: false,
     $expr: { $eq: ['$createdAt', '$updatedAt'] }
   })
     .lean()
@@ -347,7 +353,7 @@ const handleGetAllAdmin = async (role) => {
   if (role !== 'admin') {
     throw new Error('Không có quyền');
   }
-  const places = await PlaceModel.find({})
+  const places = await PlaceModel.find({ deleted: false })
     .sort({ createdAt: -1 })
     .populate('userId', 'email fullName');
   return places;
@@ -394,6 +400,20 @@ const handleRejectPlace = async (role, placeId) => {
   });
   return { message: 'Từ chối địa điểm thành công.' };
 };
+
+const handleGetAllPlaceRejected = async (role) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền thực hiện.');
+  }
+
+  const places = await PlaceModel.find({
+    isApprove: false,
+    $expr: { $ne: ['$createdAt', '$updatedAt'] }
+  })
+    .sort({ createdAt: -1 })
+    .populate('userId', 'email fullName');
+  return places;
+};
 module.exports = {
   addPlaceService,
   getOnePlace,
@@ -411,5 +431,6 @@ module.exports = {
   handleGetPlacesAwaitConfirm,
   handleApprovePlace,
   handleGetAllAdmin,
-  handleRejectPlace
+  handleRejectPlace,
+  handleGetAllPlaceRejected
 };
