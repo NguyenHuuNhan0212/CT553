@@ -4,7 +4,9 @@ const {
   handleGetFivePlacesPopular,
   handleGetFivePlacesHaveInItinerary,
   handleGetStatsRevenueAndTransaction,
-  handleGetStatsPlaceStatus
+  handleGetStatsPlaceStatus,
+  handleGetFiveSupplierHaveManyPlaces,
+  handleGetStatsRevenue
 } = require('../services/StatsForAdmin');
 
 const getStatsPlaceByType = async (req, res) => {
@@ -64,11 +66,34 @@ const getStatsPlaceStatus = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const getFiveSupplierHaveManyPlaces = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const result = await handleGetFiveSupplierHaveManyPlaces(role);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getStatsRevenueForChart = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const { startMonth, endMonth } = req.query;
+    const result = await handleGetStatsRevenue(role, startMonth, endMonth);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   getStatsPlaceByType,
   getUsersSevenDaysNewest,
   getFivePlacesPopular,
   getFivePlacesHaveInItinerary,
   getStatsRevenueAndTransaction,
-  getStatsPlaceStatus
+  getStatsPlaceStatus,
+  getFiveSupplierHaveManyPlaces,
+  getStatsRevenueForChart
 };

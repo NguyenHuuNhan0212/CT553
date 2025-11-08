@@ -164,11 +164,105 @@ const handleGetStatsPlaceStatus = async (role) => {
     totalPlacesPendingApproved: placesPendingApproved.length || 0
   };
 };
+const handleGetFiveSupplierHaveManyPlaces = async (role) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền thực hiện.');
+  }
+
+  const suppliersGroup = await PlaceModel.aggregate([
+    {
+      $group: {
+        _id: '$userId',
+        totalPlaces: { $sum: 1 }
+      }
+    },
+    {
+      $sort: {
+        totalPlaces: -1
+      }
+    },
+    {
+      $limit: 5
+    }
+  ]);
+  const suppliers = await UserModel.find({ role: 'provider' })
+    .select('fullName')
+    .lean();
+
+  const suppliersAndQuantity = suppliers.map((s) => {
+    const supplier = suppliersGroup.find(
+      (sg) => sg._id.toString() === s._id.toString()
+    );
+    if (!supplier) return null;
+    return {
+      ...s,
+      ...supplier
+    };
+  });
+  const result = suppliersAndQuantity.filter((s) => s !== null);
+  return result;
+};
+
+const handleGetStatsRevenue = async (role, startMonth, endMonth) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền thực hiện.');
+  }
+  let stats;
+  if (startMonth && endMonth) {
+    stats = await PaymentModel.aggregate([
+      {
+        $match: {
+          status: 'success',
+          amount: { $gt: 0 },
+          paymentDate: {
+            $gte: new Date(startMonth),
+            $lte: new Date(endMonth)
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            month: { $month: { $toDate: '$paymentDate' } },
+            year: { $year: { $toDate: '$paymentDate' } }
+          },
+          totalRevenue: { $sum: '$amount' },
+          totalTransaction: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } }
+    ]);
+  } else {
+    stats = await PaymentModel.aggregate([
+      {
+        $match: {
+          status: 'success',
+          amount: { $gt: 0 }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            month: { $month: { $toDate: '$paymentDate' } },
+            year: { $year: { $toDate: '$paymentDate' } }
+          },
+          totalRevenue: { $sum: '$amount' },
+          totalTransaction: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } }
+    ]);
+  }
+
+  return stats;
+};
 module.exports = {
   handleGetStatsPlaceByType,
   handleGetUsersSevenDaysNewest,
   handleGetFivePlacesPopular,
   handleGetFivePlacesHaveInItinerary,
   handleGetStatsRevenueAndTransaction,
-  handleGetStatsPlaceStatus
+  handleGetStatsPlaceStatus,
+  handleGetFiveSupplierHaveManyPlaces,
+  handleGetStatsRevenue
 };

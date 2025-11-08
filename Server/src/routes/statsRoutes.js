@@ -4,7 +4,9 @@ const {
   getFivePlacesPopular,
   getFivePlacesHaveInItinerary,
   getStatsRevenueAndTransaction,
-  getStatsPlaceStatus
+  getStatsPlaceStatus,
+  getFiveSupplierHaveManyPlaces,
+  getStatsRevenueForChart
 } = require('../controllers/statsForAdmin');
 
 const verifyToken = require('../middlewares/authMiddleware');
@@ -24,5 +26,7 @@ router
     verifyToken,
     getStatsRevenueAndTransaction
   )
-  .get('/admin/place-status-approved', verifyToken, getStatsPlaceStatus);
+  .get('/admin/place-status-approved', verifyToken, getStatsPlaceStatus)
+  .get('/admin/five-suppliers', verifyToken, getFiveSupplierHaveManyPlaces)
+  .get('/admin/revenue', verifyToken, getStatsRevenueForChart);
 module.exports = router;

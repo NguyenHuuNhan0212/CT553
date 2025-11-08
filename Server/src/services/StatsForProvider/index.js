@@ -99,12 +99,13 @@ const handleGetStatsByLocation = async (userId, from, to) => {
       $group: {
         _id: {
           month: { $month: '$checkOutDate' },
+          year: { $year: '$checkOutDate' },
           location: '$placeId'
         },
         totalRevenue: { $sum: '$totalPrice' }
       }
     },
-    { $sort: { '_id.month': 1 } }
+    { $sort: { '_id.year': 1, '_id.month': 1 } }
   ]);
   const revenueDataPlaceName = revenueData.map((r) => {
     const place = places.find(
@@ -112,6 +113,7 @@ const handleGetStatsByLocation = async (userId, from, to) => {
     );
     return {
       month: r._id.month,
+      year: r._id.year,
       location: place.name,
       totalRevenue: r.totalRevenue
     };
