@@ -39,7 +39,6 @@ const createPaymentOnline = async (bookingId, deposit) => {
     vnp_OrderType: 'booking',
     vnp_ReturnUrl: 'http://localhost:3000/api/payment/payment-return'
   });
-
   return { paymentUrl };
 };
 const createPayment = async (bookingId, deposit, isOffline) => {

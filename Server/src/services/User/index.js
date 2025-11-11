@@ -253,7 +253,6 @@ const handleGetAllUser = async (role) => {
     )
     .populate('userId', '_id')
     .lean();
-  //Thêm các địa điểm của provider
   const mergedUsers = users.map((user) => {
     const ownerInfo = owners.find(
       (o) => o.userId?._id.toString() === user._id.toString()

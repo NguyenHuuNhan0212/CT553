@@ -6,7 +6,8 @@ const {
   handleGetStatsRevenueAndTransaction,
   handleGetStatsPlaceStatus,
   handleGetFiveSupplierHaveManyPlaces,
-  handleGetStatsRevenue
+  handleGetStatsRevenue,
+  handleGetStatsSupplerHaveRevenueHigh
 } = require('../services/StatsForAdmin');
 
 const getStatsPlaceByType = async (req, res) => {
@@ -87,6 +88,20 @@ const getStatsRevenueForChart = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+const getStatsSupplierHaveRevenueHigh = async (req, res) => {
+  try {
+    const { role } = req.user;
+    const { month, location } = req.query;
+    const result = await handleGetStatsSupplerHaveRevenueHigh(
+      role,
+      month,
+      location
+    );
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   getStatsPlaceByType,
   getUsersSevenDaysNewest,
@@ -95,5 +110,6 @@ module.exports = {
   getStatsRevenueAndTransaction,
   getStatsPlaceStatus,
   getFiveSupplierHaveManyPlaces,
-  getStatsRevenueForChart
+  getStatsRevenueForChart,
+  getStatsSupplierHaveRevenueHigh
 };

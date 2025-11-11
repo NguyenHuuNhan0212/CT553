@@ -8,6 +8,7 @@ const handleGetStats = async (userId) => {
     isActive: true,
     isApprove: true
   }).lean();
+
   if (!places.length) {
     return {
       totalRevenue: 0,
@@ -16,26 +17,45 @@ const handleGetStats = async (userId) => {
       revenueByPlace: []
     };
   }
+
   const placeIds = places.map((p) => p._id);
 
   const revenueByPlaceAgg = await BookingModel.aggregate([
     {
       $match: {
-        placeId: { $in: placeIds },
-        status: 'confirmed',
-        checkOutDate: { $lte: new Date() }
+        placeId: { $in: placeIds }
+      }
+    },
+    {
+      $lookup: {
+        from: 'payments',
+        let: { bookingId: '$_id' },
+        pipeline: [
+          { $match: { $expr: { $eq: ['$bookingId', '$$bookingId'] } } },
+          { $match: { status: { $ne: 'refunded' }, amount: { $gt: 0 } } },
+          { $match: { paymentDate: { $lte: new Date() } } }
+        ],
+        as: 'payments'
+      }
+    },
+    {
+      $match: {
+        'payments.0': { $exists: true }
+      }
+    },
+    {
+      $addFields: {
+        totalRevenue: { $sum: '$payments.amount' }
       }
     },
     {
       $group: {
         _id: '$placeId',
-        totalRevenue: { $sum: '$totalPrice' },
+        totalRevenue: { $sum: '$totalRevenue' },
         totalBookings: { $sum: 1 }
       }
     },
-    {
-      $sort: { totalRevenue: -1 }
-    }
+    { $sort: { totalRevenue: -1 } }
   ]);
 
   const revenueByPlace = revenueByPlaceAgg.map((item) => {
@@ -43,8 +63,8 @@ const handleGetStats = async (userId) => {
     return {
       placeId: item._id,
       placeName: place?.name || 'Không tìm thấy tên địa điểm',
-      totalRevenue: item.totalRevenue,
-      totalBookings: item.totalBookings
+      totalRevenue: item.totalRevenue || 0,
+      totalBookings: item.totalBookings || 0
     };
   });
 
@@ -56,13 +76,13 @@ const handleGetStats = async (userId) => {
     (acc, curr) => acc + curr.totalRevenue,
     0
   );
-  const result = {
+
+  return {
     totalPlaces: places.length,
     totalRevenue,
     totalBookings,
     revenueByPlace
   };
-  return result;
 };
 
 const handleGetStatsByLocation = async (userId, from, to) => {
@@ -91,10 +111,26 @@ const handleGetStatsByLocation = async (userId, from, to) => {
   match.placeId = {
     $in: placeIds
   };
-  match.status = 'confirmed';
 
   const revenueData = await BookingModel.aggregate([
     { $match: match },
+    {
+      $lookup: {
+        from: 'payments',
+        let: { bookingId: '$_id' },
+        pipeline: [
+          { $match: { $expr: { $eq: ['$bookingId', '$$bookingId'] } } },
+          { $match: { status: { $ne: 'refunded' }, amount: { $gt: 0 } } }
+        ],
+        as: 'payments'
+      }
+    },
+    {
+      $match: { 'payments.0': { $exists: true } }
+    },
+    {
+      $addFields: { totalRevenue: { $sum: '$payments.amount' } }
+    },
     {
       $group: {
         _id: {
@@ -102,7 +138,7 @@ const handleGetStatsByLocation = async (userId, from, to) => {
           year: { $year: '$checkOutDate' },
           location: '$placeId'
         },
-        totalRevenue: { $sum: '$totalPrice' }
+        totalRevenue: { $sum: '$totalRevenue' }
       }
     },
     { $sort: { '_id.year': 1, '_id.month': 1 } }
@@ -132,7 +168,6 @@ const handleGetRevenueByDate = async (userId, date) => {
   if (!places.length) return [];
 
   const match = {
-    status: 'confirmed',
     placeId: { $in: places.map((p) => p._id) }
   };
 
@@ -150,9 +185,26 @@ const handleGetRevenueByDate = async (userId, date) => {
   const revenueData = await BookingModel.aggregate([
     { $match: match },
     {
+      $lookup: {
+        from: 'payments',
+        let: { bookingId: '$_id' },
+        pipeline: [
+          { $match: { $expr: { $eq: ['$bookingId', '$$bookingId'] } } },
+          { $match: { status: { $ne: 'refunded' }, amount: { $gt: 0 } } }
+        ],
+        as: 'payments'
+      }
+    },
+    {
+      $match: { 'payments.0': { $exists: true } }
+    },
+    {
+      $addFields: { totalRevenue: { $sum: '$payments.amount' } }
+    },
+    {
       $group: {
         _id: '$placeId',
-        totalRevenue: { $sum: '$totalPrice' }
+        totalRevenue: { $sum: '$totalRevenue' }
       }
     },
     { $sort: { totalRevenue: -1 } }

@@ -3,6 +3,7 @@ const UserModel = require('../../models/User');
 const BookingModel = require('../../models/Booking');
 const PaymentModel = require('../../models/Payment');
 const ItineraryDetailModel = require('../../models/ItineraryDetail');
+const dayjs = require('dayjs');
 const handleGetStatsPlaceByType = async (role) => {
   if (role !== 'admin') {
     throw new Error('Không có quyền truy cập.');
@@ -20,7 +21,18 @@ const handleGetStatsPlaceByType = async (role) => {
       }
     }
   ]);
-  return data;
+  const result = data.map((d) => ({
+    _id:
+      d._id === 'hotel'
+        ? 'Địa điểm lưu trú'
+        : d._id === 'cafe'
+        ? 'Quán cafe'
+        : d._id === 'restaurant'
+        ? 'Địa điểm ăn uống'
+        : 'Địa điểm du lịch',
+    totalPlaces: d.totalPlaces || 0
+  }));
+  return result;
 };
 
 const handleGetUsersSevenDaysNewest = async (role) => {
@@ -256,6 +268,112 @@ const handleGetStatsRevenue = async (role, startMonth, endMonth) => {
 
   return stats;
 };
+const handleGetStatsSupplerHaveRevenueHigh = async (role, month, location) => {
+  if (role !== 'admin') {
+    throw new Error('Không có quyền thực hiện.');
+  }
+  let revenues;
+  let places;
+  let flagLocation = false;
+  if (!month && !location) {
+    revenues = await PaymentModel.find({
+      amount: { $gt: 0 },
+      status: { $ne: 'refunded' }
+    }).populate('bookingId', 'placeId');
+  } else if (!month && location) {
+    revenues = await PaymentModel.find({
+      amount: { $gt: 0 },
+      status: { $ne: 'refunded' }
+    }).populate('bookingId', 'placeId');
+    flagLocation = true;
+  } else if (month && !location) {
+    const startOfMonth = dayjs()
+      .month(month - 1)
+      .startOf('month')
+      .toDate();
+    const endOfMonth = dayjs()
+      .month(month - 1)
+      .endOf('month')
+      .toDate();
+    revenues = await PaymentModel.find({
+      amount: { $gt: 0 },
+      paymentDate: {
+        $gte: startOfMonth,
+        $lte: endOfMonth
+      },
+      status: { $ne: 'refunded' }
+    }).populate('bookingId', 'placeId');
+  } else {
+    const startOfMonth = dayjs()
+      .month(month - 1)
+      .startOf('month')
+      .toDate();
+    const endOfMonth = dayjs()
+      .month(month - 1)
+      .endOf('month')
+      .toDate();
+    revenues = await PaymentModel.find({
+      amount: { $gt: 0 },
+      paymentDate: {
+        $gte: startOfMonth,
+        $lte: endOfMonth
+      },
+      status: { $ne: 'refunded' }
+    }).populate('bookingId', 'placeId');
+    flagLocation = true;
+  }
+  const placeAndRevenue = revenues.map((r) => ({
+    placeId: r.bookingId.placeId,
+    revenue: r.amount
+  }));
+  const revenueByPlace = placeAndRevenue.reduce((acc, item) => {
+    const id = item.placeId.toString();
+    if (!acc[id]) acc[id] = 0;
+    acc[id] += item.revenue;
+    return acc;
+  }, {});
+  const placeIds = [...new Set(placeAndRevenue.map((p) => p.placeId))];
+  if (!flagLocation) {
+    places = await PlaceModel.find({ _id: { $in: placeIds } }).populate(
+      'userId',
+      '_id fullName'
+    );
+  } else {
+    places = await PlaceModel.find({
+      _id: { $in: placeIds },
+      address: {
+        $regex: location,
+        $options: 'i'
+      }
+    }).populate('userId', '_id fullName');
+  }
+
+  const revenueBySupplier = places.reduce((acc, place) => {
+    const supplierId = place.userId?._id?.toString();
+    const supplierName = place.userId?.fullName;
+    const revenue = revenueByPlace[place._id.toString()] || 0;
+    if (!acc[supplierId]) {
+      acc[supplierId] = {
+        supplierId,
+        supplierName,
+        totalRevenue: 0,
+        places: []
+      };
+    }
+    acc[supplierId].totalRevenue += revenue;
+    acc[supplierId].places.push({
+      placeId: place._id,
+      placeName: place.name,
+      revenue
+    });
+    return acc;
+  }, {});
+  const topFiveSuppliers = Object.values(revenueBySupplier)
+    .sort((a, b) => b.totalRevenue - a.totalRevenue)
+    .slice(0, 5);
+  return topFiveSuppliers;
+};
+
 module.exports = {
   handleGetStatsPlaceByType,
   handleGetUsersSevenDaysNewest,
@@ -264,5 +382,6 @@ module.exports = {
   handleGetStatsRevenueAndTransaction,
   handleGetStatsPlaceStatus,
   handleGetFiveSupplierHaveManyPlaces,
-  handleGetStatsRevenue
+  handleGetStatsRevenue,
+  handleGetStatsSupplerHaveRevenueHigh
 };
