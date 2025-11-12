@@ -91,10 +91,11 @@ const getStatsRevenueForChart = async (req, res) => {
 const getStatsSupplierHaveRevenueHigh = async (req, res) => {
   try {
     const { role } = req.user;
-    const { month, location } = req.query;
+    const { month, year, location } = req.query;
     const result = await handleGetStatsSupplerHaveRevenueHigh(
       role,
       month,
+      year,
       location
     );
     return res.status(200).json(result);

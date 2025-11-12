@@ -268,13 +268,25 @@ const handleGetStatsRevenue = async (role, startMonth, endMonth) => {
 
   return stats;
 };
-const handleGetStatsSupplerHaveRevenueHigh = async (role, month, location) => {
+const handleGetStatsSupplerHaveRevenueHigh = async (
+  role,
+  month,
+  year,
+  location
+) => {
   if (role !== 'admin') {
     throw new Error('Không có quyền thực hiện.');
   }
+  let startOfMonth;
+  let endOfMonth;
   let revenues;
   let places;
   let flagLocation = false;
+
+  if (month) {
+    startOfMonth = dayjs(`${year}-${month}-01`).startOf('month').toDate();
+    endOfMonth = dayjs(`${year}-${month}-01`).endOf('month').toDate();
+  }
   if (!month && !location) {
     revenues = await PaymentModel.find({
       amount: { $gt: 0 },
@@ -287,14 +299,6 @@ const handleGetStatsSupplerHaveRevenueHigh = async (role, month, location) => {
     }).populate('bookingId', 'placeId');
     flagLocation = true;
   } else if (month && !location) {
-    const startOfMonth = dayjs()
-      .month(month - 1)
-      .startOf('month')
-      .toDate();
-    const endOfMonth = dayjs()
-      .month(month - 1)
-      .endOf('month')
-      .toDate();
     revenues = await PaymentModel.find({
       amount: { $gt: 0 },
       paymentDate: {
@@ -304,14 +308,6 @@ const handleGetStatsSupplerHaveRevenueHigh = async (role, month, location) => {
       status: { $ne: 'refunded' }
     }).populate('bookingId', 'placeId');
   } else {
-    const startOfMonth = dayjs()
-      .month(month - 1)
-      .startOf('month')
-      .toDate();
-    const endOfMonth = dayjs()
-      .month(month - 1)
-      .endOf('month')
-      .toDate();
     revenues = await PaymentModel.find({
       amount: { $gt: 0 },
       paymentDate: {
