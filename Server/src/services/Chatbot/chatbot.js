@@ -10,11 +10,13 @@ Bạn là một trợ lý AI thân thiện và hữu ích.
 Phân loại câu hỏi người dùng thành 6 loại:
 1. greeting → câu chào
 2. travel → câu hỏi liên quan du lịch (địa điểm, thời tiết, khách sạn, ăn uống, phương tiện, lịch trình, chi phí...)
-3. plan_trip →  yêu cầu tạo lịch trình du lịch (ví dụ: "lập kế hoạch đi Cần Thơ 2 ngày 1 đêm")
-4. place_info →  yêu cầu xem thông tin chi tiết của 1 địa điểm.(ví dụ: "cho tôi xem thông tin của bến ninh kiều", "Tôi muốn biết chi tiết về bến ninh kiều")
-5. places → yêu cầu xem danh sách địa điểm. (ví dụ: "Cho tôi xem danh sách quán cafe ở cần thơ", "Các địa điểm du lịch nổi bật ở cần thơ").
-6. other → các câu hỏi khác ngoài du lịch
-Trả về duy nhất 1 từ: greeting, travel, plan_trip, place_info, places, other
+3. plan_trip →  yêu cầu tạo lịch trình du lịch (ví dụ: "lập kế hoạch đi Cần Thơ 2 ngày 1 đêm", "lập lịch trình đi Cần Thơ 2 ngày")
+4. range_price_hotel → yêu cầu xem khoảng giá của khách sạn, nhà nghĩ ở thành phố cụ thể(ví dụ: "Gía phòng khách sạn ở thành phố cần thơ khoảng bao nhiêu",
+"Gía phòng ở thành phố cần thơ khoảng bao nhiêu", "Gía nhà nghỉ ở thành phố cần thơ khoảng bao nhiêu"...)
+5. place_info →  yêu cầu xem thông tin chi tiết của 1 địa điểm.(ví dụ: "cho tôi xem thông tin của bến ninh kiều", "Tôi muốn biết chi tiết về bến ninh kiều")
+6. places → yêu cầu xem danh sách địa điểm. (ví dụ: "Cho tôi xem danh sách quán cafe ở cần thơ", "Các địa điểm du lịch nổi bật ở cần thơ").
+7. other → các câu hỏi khác ngoài du lịch
+Trả về duy nhất 1 từ: greeting, travel, plan_trip, range_price_hotel, place_info, places, other
 `
   };
   const userMessage = { role: 'user', content: question };
@@ -25,6 +27,7 @@ Trả về duy nhất 1 từ: greeting, travel, plan_trip, place_info, places, o
       'greeting',
       'travel',
       'plan_trip',
+      'range_price_hotel',
       'place_info',
       'places',
       'other'
@@ -32,6 +35,49 @@ Trả về duy nhất 1 từ: greeting, travel, plan_trip, place_info, places, o
   )
     return category;
   return 'other';
+}
+
+async function getHotelPriceRange(city) {
+  const result = await Place.aggregate([
+    {
+      $match: {
+        type: 'hotel',
+        address: { $regex: city, $options: 'i' },
+        deleted: false,
+        isActive: true,
+        isApprove: true
+      }
+    },
+    { $unwind: '$hotelDetail.roomTypes' },
+    {
+      $group: {
+        _id: null,
+        minPrice: { $min: '$hotelDetail.roomTypes.pricePerNight' },
+        maxPrice: { $max: '$hotelDetail.roomTypes.pricePerNight' }
+      }
+    }
+  ]);
+
+  if (result.length === 0) return null; // không có khách sạn
+  return { minPrice: result[0].minPrice, maxPrice: result[0].maxPrice };
+}
+
+async function getHotelPriceAnswer(city) {
+  const range = await getHotelPriceRange(city);
+
+  if (!range) return `Hiện tại không tìm thấy khách sạn nào ở ${city}.`;
+
+  const messages = [
+    {
+      role: 'user',
+      content: `Người dùng hỏi: "Giá phòng khách sạn ở thành phố ${city} khoảng bao nhiêu?".
+Mức giá thấp nhất là ${range.minPrice} VND, cao nhất là ${range.maxPrice} VND.
+Hãy trả lời người dùng một cách tự nhiên.`
+    }
+  ];
+
+  const answer = await chatWithLLM(messages);
+  return answer;
 }
 
 // Lấy tên địa điểm
@@ -366,5 +412,6 @@ module.exports = {
   extractPlaceName,
   getPlaceInfo,
   formatPlaceInfoWithGPT,
-  getPlacesPopular
+  getPlacesPopular,
+  getHotelPriceAnswer
 };

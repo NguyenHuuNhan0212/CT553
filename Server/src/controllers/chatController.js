@@ -12,7 +12,8 @@ const {
   getAvgCost,
   extractPlaceName,
   getPlaceInfo,
-  getPlacesPopular
+  getPlacesPopular,
+  getHotelPriceAnswer
 } = require('../services/Chatbot/chatbot');
 
 function isTransportQuestion(question) {
@@ -115,6 +116,9 @@ const ask = async (req, res) => {
           services: place.services
         }
       });
+    } else if (category === 'range_price_hotel') {
+      cityToUse = await extractCity(question);
+      answer = await getHotelPriceAnswer(cityToUse);
     } else if (category === 'places') {
       cityToUse = await extractCity(question);
       if (isPlaceListQuestion(question)) {
