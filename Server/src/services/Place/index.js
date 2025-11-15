@@ -65,7 +65,7 @@ const getOnePlace = async (placeId) => {
   }
   const ownerInfo = await OwnerInfo.findOne({
     userId: place.userId
-  }).populate('userId', 'fullName phone');
+  }).populate('userId', '_id fullName phone');
   let minPricePerNight = null;
   if (place.type === 'hotel') {
     minPricePerNight = place.hotelDetail?.roomTypes.reduce((min, rt) => {
