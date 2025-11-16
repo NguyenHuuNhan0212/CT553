@@ -43,13 +43,20 @@ app.use('/api/stats', statsRoutes);
 io.on('connection', (socket) => {
   console.log('a user connected');
 
-  socket.on('sendMessage', async ({ sender, receiver, text }) => {
-    const msg = await MessageModel.create({ sender, receiver, text });
-    io.to(receiver).emit('receiveMessage', msg);
+  socket.on('sendMessage', async ({ sender, receiver, placeId, text }) => {
+    const msg = await MessageModel.create({ sender, receiver, placeId, text });
+    const receiverRoom = `${receiver}-${placeId}`;
+    io.to(receiverRoom).emit('receiveMessage', msg);
   });
 
-  socket.on('join', (userId) => {
-    socket.join(userId);
+  socket.on('join', async ({ userId, placeId, friendId }) => {
+    const room = `${userId}-${placeId}`;
+    socket.join(room);
+    await MessageModel.updateMany(
+      { sender: friendId, receiver: userId, placeId },
+      { isRead: true }
+    );
+    console.log('Joined room:', room);
   });
 
   socket.on('disconnect', () => {

@@ -1,6 +1,8 @@
 const bcrypt = require('bcryptjs');
 const UserModel = require('../../models/User');
 const OwnerModel = require('../../models/Supplier');
+const MessageModel = require('../../models/Message');
+const PlaceModel = require('../../models/Place');
 const { sendMail } = require('../../utils/nodemailer');
 const getMyInfo = async (id) => {
   const user = await UserModel.findById(id, '-password').lean();
@@ -293,6 +295,60 @@ const handleGetAllSupplier = async (role) => {
 
   return suppliers;
 };
+
+const getAllPlacesChat = async (userId) => {
+  let placeIds = await MessageModel.distinct('placeId', { sender: userId });
+
+  placeIds = await PlaceModel.find({
+    _id: { $in: placeIds },
+    userId: { $ne: userId }
+  }).distinct('_id');
+
+  const places = await PlaceModel.find({ _id: { $in: placeIds } }).lean();
+
+  const result = await Promise.all(
+    places.map(async (place) => {
+      const unread = await MessageModel.countDocuments({
+        receiver: userId,
+        placeId: place._id,
+        isRead: false
+      });
+
+      return {
+        ...place,
+        unread
+      };
+    })
+  );
+
+  return result;
+};
+
+const handleGetAllUserChatToPlaces = async (userId, placeId) => {
+  const userIds = await MessageModel.distinct('sender', {
+    receiver: userId,
+    placeId
+  });
+  const users = await UserModel.find({ _id: { $in: userIds } })
+    .select('-password')
+    .lean();
+  const result = await Promise.all(
+    users.map(async (user) => {
+      const unread = await MessageModel.countDocuments({
+        sender: user._id,
+        receiver: userId,
+        placeId: placeId,
+        isRead: false
+      });
+
+      return {
+        ...user,
+        unread
+      };
+    })
+  );
+  return result;
+};
 module.exports = {
   getMyInfo,
   uploadAvatarService,
@@ -304,5 +360,7 @@ module.exports = {
   handleConfirmUpgradeToProvider,
   handleRejectUpgradeToProvider,
   handleGetAllUser,
-  handleGetAllSupplier
+  handleGetAllSupplier,
+  getAllPlacesChat,
+  handleGetAllUserChatToPlaces
 };

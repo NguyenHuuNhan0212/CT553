@@ -2,11 +2,11 @@ const MessageModel = require('../models/Message.js');
 const express = require('express');
 const { ask } = require('../controllers/chatController.js');
 const r = express.Router();
-const verifyToken = require('../middlewares/authMiddleware.js');
 // Lấy tất cả message giữa 2 user
-r.get('/:userId/:friendId', async (req, res) => {
-  const { userId, friendId } = req.params;
+r.get('/:placeId/:userId/:friendId', async (req, res) => {
+  const { userId, friendId, placeId } = req.params;
   const messages = await MessageModel.find({
+    placeId: { $eq: placeId },
     $or: [
       { sender: userId, receiver: friendId },
       { sender: friendId, receiver: userId }

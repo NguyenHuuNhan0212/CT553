@@ -9,7 +9,9 @@ const {
   handleConfirmUpgradeToProvider,
   handleRejectUpgradeToProvider,
   handleGetAllUser,
-  handleGetAllSupplier
+  handleGetAllSupplier,
+  getAllPlacesChat,
+  handleGetAllUserChatToPlaces
 } = require('../services/User');
 
 const getMyProfile = async (req, res) => {
@@ -125,6 +127,27 @@ const getAllSupplier = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const getPlacesChat = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const result = await getAllPlacesChat(userId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getAllChatUserToProvider = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { placeId } = req.params;
+    const result = await handleGetAllUserChatToPlaces(userId, placeId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   getMyProfile,
   uploadAvatar,
@@ -136,5 +159,7 @@ module.exports = {
   confirmUpgradeToProvider,
   rejectUpgradeToProvider,
   getAllUser,
-  getAllSupplier
+  getAllSupplier,
+  getPlacesChat,
+  getAllChatUserToProvider
 };

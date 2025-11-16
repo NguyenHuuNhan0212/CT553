@@ -12,6 +12,15 @@ const messageSchema = new mongoose.Schema(
       ref: 'User',
       required: true
     },
+    placeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Place',
+      required: true
+    },
+    isRead: {
+      type: Boolean,
+      default: false
+    },
     text: String
   },
   { timestamps: true }

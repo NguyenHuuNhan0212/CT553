@@ -9,7 +9,9 @@ const {
   confirmUpgradeToProvider,
   rejectUpgradeToProvider,
   getAllUser,
-  getAllSupplier
+  getAllSupplier,
+  getPlacesChat,
+  getAllChatUserToProvider
 } = require('../controllers/userController.js');
 const upload = require('../middlewares/upload.js');
 const express = require('express');
@@ -21,6 +23,8 @@ router
   .get('/users/stats', verifyToken, getStatsUser)
   .get('/users', verifyToken, getAllUser)
   .get('/users/supplier', verifyToken, getAllSupplier)
+  .get('/places/chat', verifyToken, getPlacesChat)
+  .get('/chat/user-to-provider/:placeId', verifyToken, getAllChatUserToProvider)
   .post('/avatar', verifyToken, upload.single('avatar'), uploadAvatar)
   .patch('/update-profile', verifyToken, uploadProfileController)
   .post('/users/upgrade/confirm/:userId', verifyToken, confirmUpgradeToProvider)
