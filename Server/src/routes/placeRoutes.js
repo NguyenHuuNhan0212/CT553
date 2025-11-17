@@ -17,7 +17,8 @@ const {
   approvePlace,
   getAllAdmin,
   rejectPlace,
-  getAllPlacesRejected
+  getAllPlacesRejected,
+  getAllPlacesHaveMessage
 } = require('../controllers/placeController');
 const {
   getSearchHotels,
@@ -41,6 +42,7 @@ router
   .get('/await-approve', verifyToken, getPlacesAwaitConfirm)
   .get('/admin', verifyToken, getAllAdmin)
   .get('/rejected', verifyToken, getAllPlacesRejected)
+  .get('/chats', verifyToken, getAllPlacesHaveMessage)
   .get('/:placeId', getInfoOnePlace)
   .get('/', getAll)
   .patch('/update-status-active/:placeId', verifyToken, updateStatusActive)

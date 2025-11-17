@@ -1,6 +1,6 @@
 const PlaceModel = require('../../models/Place');
 const OwnerInfo = require('../../models/Supplier');
-const BookingModel = require('../../models/Booking');
+const MessageModel = require('../../models/Message');
 const ItineraryDetailModel = require('../../models/ItineraryDetail');
 const { sendMail } = require('../../utils/nodemailer');
 const addPlaceService = async (userId, data) => {
@@ -414,6 +414,32 @@ const handleGetAllPlaceRejected = async (role) => {
     .populate('userId', 'email fullName');
   return places;
 };
+
+const handleGetAllPlaceHaveMessage = async (userId) => {
+  let placeIds = await MessageModel.distinct('placeId', { receiver: userId });
+  placeIds = await PlaceModel.find({
+    _id: { $in: placeIds },
+    userId: { $eq: userId }
+  }).distinct('_id');
+  const places = await PlaceModel.find({ _id: { $in: placeIds } }).lean();
+
+  const result = await Promise.all(
+    places.map(async (place) => {
+      const unread = await MessageModel.countDocuments({
+        receiver: userId,
+        placeId: place._id,
+        isRead: false
+      });
+
+      return {
+        ...place,
+        unread
+      };
+    })
+  );
+
+  return result;
+};
 module.exports = {
   addPlaceService,
   getOnePlace,
@@ -432,5 +458,6 @@ module.exports = {
   handleApprovePlace,
   handleGetAllAdmin,
   handleRejectPlace,
-  handleGetAllPlaceRejected
+  handleGetAllPlaceRejected,
+  handleGetAllPlaceHaveMessage
 };

@@ -40,18 +40,28 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/itinerary', itineraryRoutes);
 app.use('/api/stats', statsRoutes);
 
+const userRoom = new Map();
 io.on('connection', (socket) => {
   console.log('a user connected');
 
   socket.on('sendMessage', async ({ sender, receiver, placeId, text }) => {
-    const msg = await MessageModel.create({ sender, receiver, placeId, text });
     const receiverRoom = `${receiver}-${placeId}`;
+    const isReceiverInRoom = [...userRoom.values()].includes(receiverRoom);
+    const msg = await MessageModel.create({
+      sender,
+      receiver,
+      placeId,
+      text,
+      isRead: isReceiverInRoom
+    });
     io.to(receiverRoom).emit('receiveMessage', msg);
   });
 
   socket.on('join', async ({ userId, placeId, friendId }) => {
     const room = `${userId}-${placeId}`;
     socket.join(room);
+
+    userRoom.set(socket.id, room);
     await MessageModel.updateMany(
       { sender: friendId, receiver: userId, placeId },
       { isRead: true }
@@ -60,6 +70,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    userRoom.delete(socket.id);
     console.log('user disconnected');
   });
 });

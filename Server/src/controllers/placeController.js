@@ -16,7 +16,8 @@ const {
   handleApprovePlace,
   handleGetAllAdmin,
   handleRejectPlace,
-  handleGetAllPlaceRejected
+  handleGetAllPlaceRejected,
+  handleGetAllPlaceHaveMessage
 } = require('../services/Place');
 
 const {
@@ -250,6 +251,15 @@ const getAllPlacesRejected = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+const getAllPlacesHaveMessage = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const result = await handleGetAllPlaceHaveMessage(userId);
+    return res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   addPlace,
   getInfoOnePlace,
@@ -269,5 +279,6 @@ module.exports = {
   approvePlace,
   getAllAdmin,
   rejectPlace,
-  getAllPlacesRejected
+  getAllPlacesRejected,
+  getAllPlacesHaveMessage
 };

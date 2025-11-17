@@ -303,7 +303,6 @@ const getAllPlacesChat = async (userId) => {
     _id: { $in: placeIds },
     userId: { $ne: userId }
   }).distinct('_id');
-
   const places = await PlaceModel.find({ _id: { $in: placeIds } }).lean();
 
   const result = await Promise.all(
