@@ -13,7 +13,7 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const itineraryRoutes = require('./routes/itineraryRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 const MessageModel = require('./models/Message');
-const messageRoutes = require('./routes/message');
+const messageRoutes = require('./routes/messageRoutes');
 dotenv.config();
 
 const app = express();
@@ -46,6 +46,7 @@ io.on('connection', (socket) => {
 
   socket.on('sendMessage', async ({ sender, receiver, placeId, text }) => {
     const receiverRoom = `${receiver}-${placeId}`;
+    const senderRoom = `${sender}-${placeId}`;
     const isReceiverInRoom = [...userRoom.values()].includes(receiverRoom);
     const msg = await MessageModel.create({
       sender,
@@ -55,6 +56,9 @@ io.on('connection', (socket) => {
       isRead: isReceiverInRoom
     });
     io.to(receiverRoom).emit('receiveMessage', msg);
+    if (senderRoom !== receiverRoom) {
+      io.to(senderRoom).emit('receiveMessage', msg);
+    }
   });
 
   socket.on('join', async ({ userId, placeId, friendId }) => {
@@ -66,6 +70,8 @@ io.on('connection', (socket) => {
       { sender: friendId, receiver: userId, placeId },
       { isRead: true }
     );
+    const friendRoom = `${friendId}-${placeId}`;
+    io.to(friendRoom).emit('messagesRead', { placeId });
     console.log('Joined room:', room);
   });
 
