@@ -118,9 +118,23 @@ const ask = async (req, res) => {
       });
     } else if (category === 'range_price_hotel') {
       cityToUse = await extractCity(question);
+      if (cityToUse === 'NULL') {
+        const lastCityMsg = await ChatMessage.findOne({
+          userId,
+          city: { $exists: true, $ne: 'NULL' }
+        }).sort({ createdAt: -1 });
+        if (lastCityMsg) cityToUse = lastCityMsg.city;
+      }
       answer = await getHotelPriceAnswer(cityToUse);
     } else if (category === 'places') {
       cityToUse = await extractCity(question);
+      if (cityToUse === 'NULL') {
+        const lastCityMsg = await ChatMessage.findOne({
+          userId,
+          city: { $exists: true, $ne: 'NULL' }
+        }).sort({ createdAt: -1 });
+        if (lastCityMsg) cityToUse = lastCityMsg.city;
+      }
       if (isPlaceListQuestion(question)) {
         const typeMap = {
           'khách sạn': 'hotel',

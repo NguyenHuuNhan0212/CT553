@@ -35,7 +35,6 @@ async function generateTripPlan(data) {
 
     const prompt = `
 Bạn là chuyên gia du lịch thông minh.
-
 Người dùng muốn du lịch tại **${city}**
 - Thời gian: ${startDate} → ${endDate}
 - Tổng số ngày chính xác: ${numDays} ngày
@@ -49,7 +48,6 @@ ${placeMap
       }`
   )
   .join('\n')}
-
 Yêu cầu:
 1. Chọn các địa điểm phù hợp nhất để tạo lịch trình du lịch thú vị, thuận tiện di chuyển.
 2. Chỉ chọn **1 địa điểm có type là "hotel"** và đặt nó ở hoạt động đầu tiên của ngày đầu tiên.
@@ -83,7 +81,6 @@ Yêu cầu:
       },
       { role: 'user', content: prompt }
     ]);
-
     // 5️⃣ Làm sạch và parse JSON
     let jsonText = gptResponse.trim().replace(/```json|```/g, '');
     const startIdx = jsonText.indexOf('[');
