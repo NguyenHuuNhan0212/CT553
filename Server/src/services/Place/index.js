@@ -247,7 +247,16 @@ const getPlacesPopularByType = async (type) => {
 };
 
 const getPlacesPopular = async () => {
+  const places = await PlaceModel.find({
+    isActive: true,
+    deleted: false,
+    isApprove: true
+  }).lean();
+  const placeIds = places.map((p) => p._id);
   const popularStats = await ItineraryDetailModel.aggregate([
+    {
+      $match: { placeId: { $in: placeIds } }
+    },
     {
       $group: {
         _id: '$placeId',
@@ -257,13 +266,10 @@ const getPlacesPopular = async () => {
     { $sort: { total: -1 } },
     { $limit: 8 }
   ]);
-  const placeIds = popularStats.map((p) => p._id);
-  const popularPlaces = await PlaceModel.find({
-    _id: { $in: placeIds },
-    isActive: true,
-    deleted: false,
-    isApprove: true
-  }).lean();
+  const placePopularIds = popularStats.map((p) => p._id.toString());
+  const popularPlaces = places.filter((p) => {
+    return placePopularIds.includes(p._id.toString());
+  });
   return popularPlaces;
 };
 
