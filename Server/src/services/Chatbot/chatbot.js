@@ -23,8 +23,8 @@ Phân loại câu hỏi người dùng thành 6 loại:
 7. other → các câu hỏi khác ngoài du lịch
 Trả về duy nhất 1 từ: greeting, travel, plan_trip, range_price_hotel, place_info, places, other
 Luật ưu tiên:
-- Nếu câu hỏi có từ khóa "xem thông tin", "chi tiết", "giới thiệu", "thông tin về" → phân loại place_info trước.
-- Nếu câu hỏi nhắc đến "giá", "phòng", "khách sạn bao nhiêu" → mới phân loại range_price_hotel.
+- Nếu câu hỏi có từ khóa "xem thông tin", "chi tiết", "giới thiệu", "thông tin về" → tùy theo câu hỏi phân loại place_info hoặc places trước .
+- Nếu câu hỏi nhắc đến "giá", "chi phí", "phòng", "khách sạn bao nhiêu" → mới phân loại range_price_hotel.
 - Các câu hỏi về chi phí du lịch tổng quát → travel (không liên quan giá phòng).
 `
   };
