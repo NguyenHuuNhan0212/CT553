@@ -9,14 +9,23 @@ async function classifyQuestion(question) {
 Bạn là một trợ lý AI thân thiện và hữu ích.
 Phân loại câu hỏi người dùng thành 6 loại:
 1. greeting → câu chào
-2. travel → câu hỏi liên quan du lịch (địa điểm, thời tiết, khách sạn, ăn uống, phương tiện, lịch trình, chi phí...)
+2. travel → câu hỏi liên quan du lịch (địa điểm, thời tiết, khách sạn, ăn uống, phương tiện, lịch trình, chi phí,...)
 3. plan_trip →  yêu cầu tạo lịch trình du lịch (ví dụ: "lập kế hoạch đi Cần Thơ 2 ngày 1 đêm", "lập lịch trình đi Cần Thơ 2 ngày")
-4. range_price_hotel → yêu cầu xem khoảng giá của khách sạn, nhà nghĩ ở thành phố cụ thể(ví dụ: "Gía phòng khách sạn ở thành phố cần thơ khoảng bao nhiêu",
-"Gía phòng ở thành phố cần thơ khoảng bao nhiêu", "Gía nhà nghỉ ở thành phố cần thơ khoảng bao nhiêu"...)
-5. place_info →  yêu cầu xem thông tin chi tiết của 1 địa điểm.(ví dụ: "cho tôi xem thông tin của bến ninh kiều", "Tôi muốn biết chi tiết về bến ninh kiều")
+4. range_price_hotel → chỉ phân loại khi người dùng hỏi về giá phòng khách sạn/nhà nghỉ tại 1 thành phố cụ thể 
+(vd: "Giá phòng khách sạn ở Cần Thơ bao nhiêu?", "Nhà nghỉ ở Cần Thơ giá tầm bao nhiêu?")
+- Nếu người dùng hỏi về chi phí đi du lịch tổng quát, ngân sách du lịch, chi phí ăn uống / vé tham quan / chi phí dự tính → xếp vào travel.
+(ví dụ: "Tôi có 500k đi Cần Thơ được không?", "Đi Đà Lạt 1 ngày tốn bao nhiêu?")
+5. place_info → ưu tiên phân loại khi câu chứa các cụm như:
+"cho tôi xem thông tin", "xem chi tiết", "tôi muốn biết về", "chi tiết về", "giới thiệu về", "cho tôi thông tin"
+→ Dùng để xem thông tin của 1 địa điểm, 1 khách sạn, 1 quán ăn, 1 khu du lịch...
+- Không phân loại vào range_price_hotel nếu người dùng không hỏi về giá phòng.
 6. places → yêu cầu xem danh sách địa điểm. (ví dụ: "Cho tôi xem danh sách quán cafe ở cần thơ", "Các địa điểm du lịch nổi bật ở cần thơ").
 7. other → các câu hỏi khác ngoài du lịch
 Trả về duy nhất 1 từ: greeting, travel, plan_trip, range_price_hotel, place_info, places, other
+Luật ưu tiên:
+- Nếu câu hỏi có từ khóa "xem thông tin", "chi tiết", "giới thiệu", "thông tin về" → phân loại place_info trước.
+- Nếu câu hỏi nhắc đến "giá", "phòng", "khách sạn bao nhiêu" → mới phân loại range_price_hotel.
+- Các câu hỏi về chi phí du lịch tổng quát → travel (không liên quan giá phòng).
 `
   };
   const userMessage = { role: 'user', content: question };
@@ -72,7 +81,7 @@ async function getHotelPriceAnswer(city) {
       role: 'user',
       content: `Người dùng hỏi: "Giá phòng khách sạn ở thành phố ${city} khoảng bao nhiêu?".
 Mức giá thấp nhất là ${range.minPrice} VND, cao nhất là ${range.maxPrice} VND.
-Hãy trả lời người dùng một cách tự nhiên.`
+Hãy trả lời người dùng một cách tự nhiên. BẮT BUỘC TRẢ LỜI VỀ DẠNG HTML CÓ ĐỊNH DẠNG ĐẸP.`
     }
   ];
 

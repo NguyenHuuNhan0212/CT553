@@ -33,7 +33,7 @@ const ask = async (req, res) => {
     let tripPlan = null;
     let cityToUse = null;
     // === 1. Kiểm tra xem user đang trả lời số ngày không ===
-    if (/^\d+(\s*ngày)?$/.test(question)) {
+    if (/(\d+)\s*[-\s]*ngày/i.test(question)) {
       // Tìm message gần nhất của user có awaitingDays = true
       const lastState = await ChatMessage.findOne({
         userId,
@@ -67,7 +67,6 @@ const ask = async (req, res) => {
       });
     }
     if (isTransportQuestion(question)) {
-      // Lấy lịch sử hội thoại gần đây
       const history = await ChatMessage.find({ userId })
         .sort({ createdAt: -1 })
         .limit(10)
@@ -76,7 +75,7 @@ const ask = async (req, res) => {
         {
           role: 'system',
           content: `Bạn là trợ lý AI chuyên du lịch, hãy tư vấn phương tiện đi lại giữa các tỉnh thành ở Việt Nam.
-              Hãy gợi ý phương tiện rẻ nhất, nhanh nhất và hợp lý nhất. TRẢ LỜI VỀ DƯỚI DẠNG HTML`
+              Hãy gợi ý phương tiện rẻ nhất, nhanh nhất và hợp lý nhất.BẮT BUỘC TRẢ LỜI VỀ DƯỚI DẠNG HTML CÓ ĐỊNH DẠNG ĐẸP`
         },
 
         ...history
@@ -223,7 +222,7 @@ const ask = async (req, res) => {
           {
             role: 'system',
             content:
-              'Bạn là trợ lý AI thân thiện chuyên về DU LỊCH, trả lời ngắn gọn, dễ hiểu.'
+              'Bạn là trợ lý AI thân thiện chuyên về DU LỊCH, trả lời ngắn gọn, dễ hiểu. BẮT BUỘC NỘI DUNG TRẢ VỀ DẠNG HTML CÓ ĐỊNH DẠNG ĐẸP'
           },
           ...history
             .reverse()
@@ -252,7 +251,7 @@ const ask = async (req, res) => {
         if (lastCityMsg) cityToUse = lastCityMsg.city;
       }
 
-      const daysMatch = question.match(/(\d+)\s*ngày/);
+      const daysMatch = question.match(/(\d+)\s*[-\s]*ngày/i);
       const numDays = daysMatch ? parseInt(daysMatch[1]) : null;
 
       if (!numDays) {
